@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dlx shadcn:*)",
+      "Bash(pnpm exec tsc:*)",
+      "Bash(pnpm run lint:*)",
+      "Bash(pnpm run build:*)"
+    ]
+  },
+  "enabledPlugins": {}
+}

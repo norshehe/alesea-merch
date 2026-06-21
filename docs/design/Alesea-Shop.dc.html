@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600&family=Marcellus&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{margin:0;padding:0}
+  ::selection{background:#084F51;color:#fff}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit;cursor:pointer;border:none;background:none}
+</style>
+</helmet>
+
+<div style="--accent:{{ accent }};font-family:'Jost',sans-serif;color:#2A2620;background:#F6F1E9;min-height:100vh;overflow-x:hidden;">
+
+  <header style="position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:74px;background:rgba(246,241,233,0.88);backdrop-filter:blur(14px);border-bottom:1px solid #E3DACB;">
+    <nav style="flex:1;display:flex;align-items:center;gap:30px;">
+      <button onClick="{{ goHome }}" style="font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:#2A2620;">Shop</button>
+      <button onClick="{{ goLookbook }}" style="font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:#7C7264;">Lookbook</button>
+      <button onClick="{{ goLookbook }}" style="font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:#7C7264;">Our Stays</button>
+    </nav>
+    <button onClick="{{ goHome }}" style="display:flex;flex-direction:column;align-items:center;line-height:1;">
+      <span style="font-family:'Marcellus',serif;font-size:25px;letter-spacing:0.42em;text-indent:0.42em;color:#084F51;">ALESEA</span>
+      <span style="font-size:8.5px;letter-spacing:0.5em;text-indent:0.5em;text-transform:uppercase;color:#084F51;margin-top:5px;">The Shop</span>
+    </button>
+    <div style="flex:1;display:flex;align-items:center;justify-content:flex-end;gap:26px;">
+      <span style="font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:#7C7264;">La Union, PH</span>
+      <button onClick="{{ toggleCart }}" style="position:relative;display:flex;align-items:center;gap:9px;font-size:11.5px;letter-spacing:0.18em;text-transform:uppercase;color:#2A2620;">
+        <span>Bag</span>
+        <span style="min-width:21px;height:21px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;background:var(--accent,#084F51);color:#fff;font-size:11px;letter-spacing:0;">{{ cartCount }}</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ HOME ============ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+  <div>
+    <section style="position:relative;height:90vh;min-height:600px;max-height:880px;width:100%;overflow:hidden;background:#3A352E;">
+      <img src="https://lirp.cdn-website.com/a93d3aad/dms3rep/multi/opt/Pool+View-2280w.jpg" referrerpolicy="no-referrer" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,24,18,0.28) 0%,rgba(28,24,18,0.12) 38%,rgba(28,24,18,0.62) 100%);"></div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:0 56px 76px;">
+        <span style="font-size:12px;letter-spacing:0.4em;text-transform:uppercase;color:#E9DFCD;margin-bottom:22px;">The Alesea Shop · La Union</span>
+        <h1 style="font-family:'Marcellus',serif;font-size:84px;line-height:0.98;color:#FBF8F2;max-width:780px;font-weight:400;text-wrap:balance;">Carry the coast home.</h1>
+        <p style="font-size:17px;line-height:1.6;color:#EDE6D8;max-width:430px;margin-top:24px;font-weight:300;">Tees, bags, caps and tumblers made for slow mornings and long days by the water. A little piece of the villa, wherever you go.</p>
+        <div style="display:flex;gap:14px;margin-top:34px;">
+          <button onClick="{{ shopAll }}" style="padding:16px 34px;background:#FBF8F2;color:#2A2620;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="background:#fff;transform:translateY(-1px);">Shop the collection</button>
+          <button onClick="{{ goLookbook }}" style="padding:16px 30px;border:1px solid rgba(251,248,242,0.55);color:#FBF8F2;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="border-color:#fff;">Lookbook</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- shop by category -->
+    <section style="padding:84px 56px 12px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:32px;margin-bottom:40px;">
+        <div>
+          <span style="font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#084F51;">Shop by category</span>
+          <h2 style="font-family:'Marcellus',serif;font-size:50px;line-height:1.04;color:#084F51;margin-top:14px;font-weight:400;max-width:560px;text-wrap:balance;">Three ways to bring the beach home.</h2>
+        </div>
+        <p style="font-size:15px;line-height:1.65;color:#7C7264;max-width:330px;text-align:right;font-weight:300;">Everything is small-batch and built for the coast — printed, packed and shipped from the shores of La Union.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:26px;">
+        <sc-for list="{{ shopCategories }}" as="sc" hint-placeholder-count="3">
+          <div style="position:relative;min-height:480px;overflow:hidden;background:#ECE3D5;">
+            <image-slot id="{{ sc.slotId }}" shape="rect" fit="cover" placeholder="{{ sc.placeholder }}" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(28,24,18,0) 38%,rgba(28,24,18,0.66) 100%);pointer-events:none;"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:26px 28px;display:flex;flex-direction:column;gap:6px;pointer-events:none;">
+              <span style="font-size:10.5px;letter-spacing:0.24em;text-transform:uppercase;color:rgba(251,248,242,0.78);">Collection</span>
+              <span style="font-family:'Marcellus',serif;font-size:28px;color:#FBF8F2;">{{ sc.label }}</span>
+              <button onClick="{{ sc.onDiscover }}" style="align-self:flex-start;margin-top:8px;display:inline-flex;align-items:center;gap:9px;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#FBF8F2;pointer-events:auto;border-bottom:1px solid rgba(251,248,242,0.5);padding-bottom:4px;" style-hover="border-color:#fff;gap:13px;">Discover <span style="font-size:13px;">→</span></button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- assurances band -->
+    <section style="background:#084F51;padding:62px 56px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:40px;">
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <span style="width:54px;height:54px;border-radius:50%;border:1px solid rgba(201,188,163,0.55);display:flex;align-items:center;justify-content:center;color:#C9BCA3;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>
+          </span>
+          <span style="font-size:16px;font-weight:500;letter-spacing:0.01em;color:#EBE1CC;">Built for movement</span>
+          <p style="font-size:14px;line-height:1.65;color:#9DAA9D;font-weight:300;">Performance-cotton blends that flex with you from warm-up to wind-down.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <span style="width:54px;height:54px;border-radius:50%;border:1px solid rgba(201,188,163,0.55);display:flex;align-items:center;justify-content:center;color:#C9BCA3;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M4 20c0-7 5-13 16-14C19 13 13 20 5 20"/><path d="M4 20 14 10"/></svg>
+          </span>
+          <span style="font-size:16px;font-weight:500;letter-spacing:0.01em;color:#EBE1CC;">Conscious fabrics</span>
+          <p style="font-size:14px;line-height:1.65;color:#9DAA9D;font-weight:300;">Organic and water-resistant materials chosen to last more than a season.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <span style="width:54px;height:54px;border-radius:50%;border:1px solid rgba(201,188,163,0.55);display:flex;align-items:center;justify-content:center;color:#C9BCA3;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M2 6h11v9H2z"/><path d="M13 9h4l4 3v3h-8z"/><circle cx="7" cy="18" r="1.6"/><circle cx="17.5" cy="18" r="1.6"/></svg>
+          </span>
+          <span style="font-size:16px;font-weight:500;letter-spacing:0.01em;color:#EBE1CC;">Fast island shipping</span>
+          <p style="font-size:14px;line-height:1.65;color:#9DAA9D;font-weight:300;">Packed and dispatched quickly so your kit is ready when you are.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <span style="width:54px;height:54px;border-radius:50%;border:1px solid rgba(201,188,163,0.55);display:flex;align-items:center;justify-content:center;color:#C9BCA3;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><path d="M12 2.5 5 5v6c0 4.5 3 8 7 9.5 4-1.5 7-5 7-9.5V5z"/><path d="M9 12l2 2 4-4"/></svg>
+          </span>
+          <span style="font-size:16px;font-weight:500;letter-spacing:0.01em;color:#EBE1CC;">Wear-it-in guarantee</span>
+          <p style="font-size:14px;line-height:1.65;color:#9DAA9D;font-weight:300;">If it doesn’t move the way you do, send it back — no fuss.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- product grid -->
+    <section id="shop-grid" style="padding:84px 56px 96px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:24px;margin-bottom:40px;">
+        <div>
+          <span style="font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#084F51;">The Collection</span>
+          <h2 style="font-family:'Marcellus',serif;font-size:46px;color:#084F51;margin-top:12px;font-weight:400;">Everyday coastal goods</h2>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <sc-for list="{{ filterChips }}" as="chip" hint-placeholder-count="5">
+            <button onClick="{{ chip.onClick }}" style="{{ chip.style }}">{{ chip.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:30px 26px;">
+        <sc-for list="{{ products }}" as="p" hint-placeholder-count="8">
+          <div onClick="{{ p.onOpen }}" style="cursor:pointer;display:flex;flex-direction:column;">
+            <div style="position:relative;aspect-ratio:4/5;overflow:hidden;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 13px,#E8DFCD 13px,#E8DFCD 26px);">
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;">
+                <span style="font-family:'Marcellus',serif;font-size:22px;color:#C4B79C;text-align:center;padding:0 20px;line-height:1.2;">{{ p.name }}</span>
+                <span style="font-family:ui-monospace,Menlo,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:#B6A988;">{{ p.shotLabel }}</span>
+              </div>
+              <button onClick="{{ p.onAdd }}" title="Quick add" style="position:absolute;bottom:12px;right:12px;width:42px;height:42px;border-radius:50%;background:#FBF8F2;color:#2A2620;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;box-shadow:0 4px 14px rgba(42,38,32,0.16);" style-hover="background:var(--accent,#084F51);color:#fff;">+</button>
+            </div>
+            <div style="padding-top:16px;display:flex;flex-direction:column;gap:7px;">
+              <span style="font-size:10.5px;letter-spacing:0.2em;text-transform:uppercase;color:#9A8C73;">{{ p.categoryLabel }}</span>
+              <span style="font-family:'Marcellus',serif;font-size:19px;color:#084F51;">{{ p.name }}</span>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px;">
+                <span style="font-size:15px;color:#5A5247;">{{ p.priceFmt }}</span>
+                <div style="display:flex;gap:6px;">
+                  <sc-for list="{{ p.swatches }}" as="sw" hint-placeholder-count="2">
+                    <span style="{{ sw.style }}"></span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- editorial split -->
+    <section style="display:grid;grid-template-columns:1.05fr 1fr;min-height:560px;background:#ECE3D5;">
+      <div style="position:relative;overflow:hidden;background:#3A352E;min-height:360px;">
+        <img src="https://lirp.cdn-website.com/a93d3aad/dms3rep/multi/opt/Bath+Amenities-909h.jpg" referrerpolicy="no-referrer" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;padding:84px 72px;">
+        <span style="font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#084F51;">Made for the morning swim</span>
+        <h2 style="font-family:'Marcellus',serif;font-size:40px;line-height:1.12;color:#084F51;margin-top:18px;font-weight:400;max-width:420px;text-wrap:balance;">Designed at the villa. Worn down the coast.</h2>
+        <p style="font-size:16px;line-height:1.7;color:#6B6256;margin-top:20px;max-width:440px;font-weight:300;">Each piece is drawn from a place we love — the long beach at Baroro, the two pools at Tammocalao, the surf town mornings. Natural fabrics, muted dyes, built to be lived in.</p>
+        <p style="font-family:'Marcellus',serif;font-size:23px;font-style:italic;color:#084F51;margin-top:40px;line-height:1.4;max-width:430px;">“A place — and now a wardrobe — you can return to with confidence.”</p>
+        <button onClick="{{ shopAll }}" style="align-self:flex-start;margin-top:34px;padding:15px 32px;background:var(--accent,#084F51);color:#fff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="filter:brightness(1.06);">Shop everything</button>
+      </div>
+    </section>
+
+    <!-- alesea carry feature -->
+    <section style="padding:96px 56px 88px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;">
+        <div style="position:relative;padding:44px 0 0 44px;">
+          <div style="position:absolute;top:0;left:0;width:78%;height:82%;border:1px solid #C9BCA3;border-radius:120px 6px 6px 6px;"></div>
+          <div style="position:relative;border-radius:110px 6px 90px 6px;overflow:hidden;aspect-ratio:1.18/1;background:#ECE3D5;box-shadow:0 24px 60px rgba(42,38,32,0.14);">
+            <image-slot id="carry-feature" shape="rect" fit="cover" placeholder="Drop Carry photo" style="position:absolute;inset:0;width:100%;height:100%;"></image-slot>
+          </div>
+        </div>
+        <div style="max-width:440px;">
+          <span style="font-size:12px;letter-spacing:0.32em;text-transform:uppercase;color:#084F51;">Alesea Carry</span>
+          <h2 style="font-family:'Marcellus',serif;font-size:44px;line-height:1.05;color:#084F51;margin-top:14px;font-weight:400;">Everything but the tide.</h2>
+          <p style="font-size:16px;line-height:1.7;color:#6B6256;margin-top:22px;font-weight:300;">From market runs to island hops, the Carry line holds the whole day. Water-resistant canvas, wipe-clean linings, and straps built for the boat — so you can pack light and stay long.</p>
+          <button onClick="{{ shopCarry }}" style="margin-top:32px;padding:16px 32px;background:#084F51;color:#fff;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;" style-hover="filter:brightness(1.12);">Shop Alesea Carry</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- spotted on the shoreline -->
+    <section style="padding:8px 56px 96px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:28px;margin-bottom:34px;">
+        <div>
+          <span style="font-size:12px;letter-spacing:0.26em;text-transform:uppercase;color:#084F51;">@aleseacollection</span>
+          <h2 style="font-family:'Marcellus',serif;font-size:46px;line-height:1.04;color:#084F51;margin-top:12px;font-weight:400;">Spotted on the shoreline.</h2>
+        </div>
+        <p style="font-size:15px;line-height:1.65;color:#7C7264;max-width:300px;text-align:right;font-weight:300;">Tag us to be featured. Real guests, real goods, real golden hour.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:18px;">
+        <image-slot id="ig-1" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+        <image-slot id="ig-2" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+        <image-slot id="ig-3" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+        <image-slot id="ig-4" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+        <image-slot id="ig-5" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+        <image-slot id="ig-6" shape="rounded" radius="4" fit="cover" placeholder="@ tag" style="aspect-ratio:1/1.04;width:100%;"></image-slot>
+      </div>
+    </section>
+  </div>
+  </sc-if>
+
+  <!-- ============ PRODUCT ============ -->
+  <sc-if value="{{ isProduct }}">
+  <div style="padding:34px 56px 96px;">
+    <button onClick="{{ goHome }}" style="font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:#7C7264;margin-bottom:30px;" style-hover="color:#2A2620;">← Back to shop</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start;">
+      <!-- gallery -->
+      <div style="display:grid;grid-template-columns:74px 1fr;gap:18px;">
+        <div style="display:flex;flex-direction:column;gap:14px;">
+          <sc-for list="{{ activeProduct.thumbs }}" as="t" hint-placeholder-count="3">
+            <div style="aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 9px,#E8DFCD 9px,#E8DFCD 18px);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#B6A988;">{{ t }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="aspect-ratio:4/5;position:relative;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 16px,#E8DFCD 16px,#E8DFCD 32px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;">
+          <span style="font-family:'Marcellus',serif;font-size:34px;color:#C4B79C;text-align:center;padding:0 30px;">{{ activeProduct.name }}</span>
+          <span style="font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:#B6A988;">{{ activeProduct.shotLabel }} — drop product photo</span>
+        </div>
+      </div>
+      <!-- info -->
+      <div style="max-width:460px;">
+        <span style="font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:#9A8C73;">{{ activeProduct.categoryLabel }}</span>
+        <h1 style="font-family:'Marcellus',serif;font-size:44px;line-height:1.05;color:#084F51;margin-top:12px;font-weight:400;">{{ activeProduct.name }}</h1>
+        <p style="font-size:22px;color:#5A5247;margin-top:16px;">{{ activeProduct.priceFmt }}</p>
+        <p style="font-size:16px;line-height:1.7;color:#6B6256;margin-top:22px;font-weight:300;">{{ activeProduct.blurb }}</p>
+
+        <div style="margin-top:34px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;">
+            <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#2A2620;">Colour</span>
+            <span style="font-size:13px;color:#7C7264;">{{ activeProduct.selColor }}</span>
+          </div>
+          <div style="display:flex;gap:12px;">
+            <sc-for list="{{ activeProduct.colorOptions }}" as="c" hint-placeholder-count="3">
+              <button onClick="{{ c.onSelect }}" title="{{ c.name }}" style="{{ c.style }}"></button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="margin-top:30px;">
+          <span style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:#2A2620;display:block;margin-bottom:13px;">{{ activeProduct.sizeLabel }}</span>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <sc-for list="{{ activeProduct.sizeOptions }}" as="s" hint-placeholder-count="5">
+              <button onClick="{{ s.onSelect }}" style="{{ s.style }}">{{ s.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:14px;margin-top:36px;align-items:stretch;">
+          <div style="display:flex;align-items:center;border:1px solid #D9CFBC;">
+            <button onClick="{{ activeProduct.onDecQty }}" style="width:46px;height:54px;font-size:20px;color:#7C7264;">−</button>
+            <span style="width:40px;text-align:center;font-size:16px;color:#2A2620;">{{ activeProduct.qty }}</span>
+            <button onClick="{{ activeProduct.onIncQty }}" style="width:46px;height:54px;font-size:20px;color:#7C7264;">+</button>
+          </div>
+          <button onClick="{{ activeProduct.onAdd }}" style="flex:1;background:var(--accent,#084F51);color:#fff;font-size:12.5px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="filter:brightness(1.07);">Add to bag — {{ activeProduct.priceFmt }}</button>
+        </div>
+
+        <div style="margin-top:38px;border-top:1px solid #E3DACB;">
+          <div style="display:flex;gap:18px;padding:20px 0;border-bottom:1px solid #E3DACB;">
+            <span style="flex:0 0 120px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9A8C73;">Materials</span>
+            <span style="font-size:14.5px;color:#6B6256;line-height:1.6;font-weight:300;">{{ activeProduct.materials }}</span>
+          </div>
+          <div style="display:flex;gap:18px;padding:20px 0;border-bottom:1px solid #E3DACB;">
+            <span style="flex:0 0 120px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#9A8C73;">Shipping</span>
+            <span style="font-size:14.5px;color:#6B6256;line-height:1.6;font-weight:300;">Ships from Metro Manila in 3–5 days. Free over {{ freeShipFmt }}.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- related -->
+    <div style="margin-top:88px;">
+      <h3 style="font-family:'Marcellus',serif;font-size:28px;color:#084F51;margin-bottom:28px;font-weight:400;">Complete the set</h3>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:26px;">
+        <sc-for list="{{ activeProduct.related }}" as="r" hint-placeholder-count="4">
+          <div onClick="{{ r.onOpen }}" style="cursor:pointer;display:flex;flex-direction:column;">
+            <div style="aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 13px,#E8DFCD 13px,#E8DFCD 26px);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'Marcellus',serif;font-size:19px;color:#C4B79C;text-align:center;padding:0 16px;">{{ r.name }}</span>
+            </div>
+            <div style="padding-top:14px;display:flex;flex-direction:column;gap:5px;">
+              <span style="font-family:'Marcellus',serif;font-size:17px;color:#084F51;">{{ r.name }}</span>
+              <span style="font-size:14px;color:#7C7264;">{{ r.priceFmt }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ CART ============ -->
+  <sc-if value="{{ isCart }}">
+  <div style="padding:48px 56px 110px;min-height:60vh;">
+    <button onClick="{{ goHome }}" style="font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:#7C7264;margin-bottom:26px;" style-hover="color:#2A2620;">← Continue shopping</button>
+    <h1 style="font-family:'Marcellus',serif;font-size:46px;color:#084F51;font-weight:400;margin-bottom:36px;">Your bag</h1>
+
+    <sc-if value="{{ cartEmpty }}">
+      <div style="padding:80px 0;text-align:center;border-top:1px solid #E3DACB;">
+        <p style="font-family:'Marcellus',serif;font-size:26px;color:#084F51;">Your bag is empty.</p>
+        <p style="font-size:15px;color:#7C7264;margin-top:10px;font-weight:300;">Nothing packed for the coast just yet.</p>
+        <button onClick="{{ shopAll }}" style="margin-top:26px;padding:15px 34px;background:var(--accent,#084F51);color:#fff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;">Browse the collection</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ hasItems }}">
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:64px;align-items:start;">
+      <div style="border-top:1px solid #E3DACB;">
+        <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+          <div style="display:flex;gap:22px;padding:26px 0;border-bottom:1px solid #E3DACB;">
+            <div style="flex:0 0 92px;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 10px,#E8DFCD 10px,#E8DFCD 20px);display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:ui-monospace,Menlo,monospace;font-size:8px;letter-spacing:0.1em;text-transform:uppercase;color:#B6A988;">{{ it.cat }}</span>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div style="display:flex;justify-content:space-between;gap:16px;">
+                <span style="font-family:'Marcellus',serif;font-size:20px;color:#084F51;">{{ it.name }}</span>
+                <span style="font-size:16px;color:#2A2620;">{{ it.lineFmt }}</span>
+              </div>
+              <span style="font-size:12.5px;letter-spacing:0.08em;color:#9A8C73;margin-top:5px;text-transform:uppercase;">{{ it.variant }}</span>
+              <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:16px;">
+                <div style="display:flex;align-items:center;border:1px solid #D9CFBC;">
+                  <button onClick="{{ it.onDec }}" style="width:38px;height:40px;font-size:17px;color:#7C7264;">−</button>
+                  <span style="width:34px;text-align:center;font-size:14px;">{{ it.qty }}</span>
+                  <button onClick="{{ it.onInc }}" style="width:38px;height:40px;font-size:17px;color:#7C7264;">+</button>
+                </div>
+                <button onClick="{{ it.onRemove }}" style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#9A8C73;" style-hover="color:#084F51;">Remove</button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="background:#ECE3D5;padding:34px 32px;">
+        <h3 style="font-family:'Marcellus',serif;font-size:23px;color:#084F51;font-weight:400;margin-bottom:22px;">Order summary</h3>
+        <div style="display:flex;justify-content:space-between;padding:11px 0;font-size:14.5px;color:#6B6256;">
+          <span>Subtotal</span><span style="color:#2A2620;">{{ subtotalFmt }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:11px 0;font-size:14.5px;color:#6B6256;border-bottom:1px solid #DCD0BC;">
+          <span>{{ shipLabel }}</span><span style="color:#2A2620;">{{ shippingFmt }}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:18px 0 4px;font-size:18px;color:#2A2620;">
+          <span style="font-family:'Marcellus',serif;">Total</span><span style="font-family:'Marcellus',serif;">{{ totalFmt }}</span>
+        </div>
+        <button onClick="{{ goCheckout }}" style="width:100%;margin-top:24px;padding:17px;background:var(--accent,#084F51);color:#fff;font-size:12.5px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="filter:brightness(1.07);">Checkout</button>
+        <p style="font-size:12px;color:#9A8C73;text-align:center;margin-top:14px;font-weight:300;">{{ shipHint }}</p>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ============ CHECKOUT ============ -->
+  <sc-if value="{{ isCheckout }}">
+  <div style="padding:48px 56px 110px;min-height:60vh;">
+    <button onClick="{{ goCart }}" style="font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:#7C7264;margin-bottom:26px;" style-hover="color:#2A2620;">← Back to bag</button>
+
+    <sc-if value="{{ orderPlaced }}">
+      <div style="max-width:560px;margin:40px auto;text-align:center;padding:60px 40px;background:#fff;border:1px solid #E3DACB;">
+        <span style="width:64px;height:64px;border-radius:50%;background:#084F51;display:inline-flex;align-items:center;justify-content:center;margin-bottom:24px;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>
+        </span>
+        <h1 style="font-family:'Marcellus',serif;font-size:38px;color:#084F51;font-weight:400;">Order confirmed</h1>
+        <p style="font-size:15px;line-height:1.7;color:#6B6256;margin-top:14px;font-weight:300;">Thank you, {{ orderName }}. A confirmation is on its way to {{ orderEmail }}. Your coastal goods ship from La Union within 3–5 days.</p>
+        <p style="font-family:ui-monospace,Menlo,monospace;font-size:13px;letter-spacing:0.1em;color:#9A8C73;margin-top:22px;">Order {{ orderRef }}</p>
+        <button onClick="{{ shopAll }}" style="margin-top:30px;padding:15px 34px;background:#084F51;color:#fff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="filter:brightness(1.1);">Continue shopping</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ checkoutActive }}">
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:64px;align-items:start;">
+      <!-- form -->
+      <form onSubmit="{{ onPlaceOrder }}" style="max-width:620px;">
+        <h1 style="font-family:'Marcellus',serif;font-size:40px;color:#084F51;font-weight:400;margin-bottom:34px;">Checkout</h1>
+
+        <!-- contact -->
+        <div style="margin-bottom:38px;">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#084F51;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">1</span>
+            <h2 style="font-family:'Marcellus',serif;font-size:22px;color:#2A2620;font-weight:400;">Contact</h2>
+          </div>
+          <div style="display:grid;gap:14px;">
+            <input required type="email" value="{{ form.email }}" onInput="{{ onField.email }}" placeholder="Email address" style="{{ inputStyle }}" />
+            <input type="tel" value="{{ form.phone }}" onInput="{{ onField.phone }}" placeholder="Phone (for delivery updates)" style="{{ inputStyle }}" />
+          </div>
+        </div>
+
+        <!-- shipping -->
+        <div style="margin-bottom:38px;">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#084F51;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">2</span>
+            <h2 style="font-family:'Marcellus',serif;font-size:22px;color:#2A2620;font-weight:400;">Shipping address</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <input required value="{{ form.first }}" onInput="{{ onField.first }}" placeholder="First name" style="{{ inputStyle }}" />
+            <input required value="{{ form.last }}" onInput="{{ onField.last }}" placeholder="Last name" style="{{ inputStyle }}" />
+            <input required value="{{ form.address }}" onInput="{{ onField.address }}" placeholder="Street address" style="{{ inputStyleFull }}" />
+            <input value="{{ form.address2 }}" onInput="{{ onField.address2 }}" placeholder="Apartment, unit, barangay (optional)" style="{{ inputStyleFull }}" />
+            <input required value="{{ form.city }}" onInput="{{ onField.city }}" placeholder="City / Municipality" style="{{ inputStyle }}" />
+            <input required value="{{ form.province }}" onInput="{{ onField.province }}" placeholder="Province" style="{{ inputStyle }}" />
+            <input required value="{{ form.zip }}" onInput="{{ onField.zip }}" placeholder="Postal code" style="{{ inputStyle }}" />
+            <input value="Philippines" disabled style="{{ inputStyleDisabled }}" />
+          </div>
+        </div>
+
+        <!-- delivery method -->
+        <div style="margin-bottom:38px;">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#084F51;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">3</span>
+            <h2 style="font-family:'Marcellus',serif;font-size:22px;color:#2A2620;font-weight:400;">Delivery</h2>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <sc-for list="{{ deliveryOptions }}" as="d" hint-placeholder-count="2">
+              <button type="button" onClick="{{ d.onSelect }}" style="{{ d.style }}">
+                <span style="display:flex;align-items:center;gap:13px;">
+                  <span style="{{ d.dot }}"></span>
+                  <span style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;">
+                    <span style="font-size:14.5px;color:#2A2620;">{{ d.label }}</span>
+                    <span style="font-size:12.5px;color:#9A8C73;font-weight:300;">{{ d.note }}</span>
+                  </span>
+                </span>
+                <span style="font-size:14.5px;color:#084F51;">{{ d.priceFmt }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- payment -->
+        <div style="margin-bottom:18px;">
+          <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:18px;">
+            <span style="width:26px;height:26px;border-radius:50%;background:#084F51;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;">4</span>
+            <h2 style="font-family:'Marcellus',serif;font-size:22px;color:#2A2620;font-weight:400;">Payment</h2>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+            <sc-for list="{{ payMethods }}" as="m" hint-placeholder-count="3">
+              <button type="button" onClick="{{ m.onSelect }}" style="{{ m.style }}">{{ m.label }}</button>
+            </sc-for>
+          </div>
+          <sc-if value="{{ payIsCard }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <input value="{{ form.card }}" onInput="{{ onField.card }}" placeholder="Card number" style="{{ inputStyleFull }}" />
+            <input value="{{ form.cardName }}" onInput="{{ onField.cardName }}" placeholder="Name on card" style="{{ inputStyleFull }}" />
+            <input value="{{ form.exp }}" onInput="{{ onField.exp }}" placeholder="MM / YY" style="{{ inputStyle }}" />
+            <input value="{{ form.cvc }}" onInput="{{ onField.cvc }}" placeholder="CVC" style="{{ inputStyle }}" />
+          </div>
+          </sc-if>
+          <sc-if value="{{ payIsCod }}">
+            <p style="font-size:14px;line-height:1.6;color:#6B6256;font-weight:300;padding:6px 2px;">Pay with cash when your order arrives. Please prepare the exact amount for our courier.</p>
+          </sc-if>
+
+          <button type="submit" style="width:100%;margin-top:30px;padding:18px;background:#084F51;color:#fff;font-size:12.5px;letter-spacing:0.18em;text-transform:uppercase;" style-hover="filter:brightness(1.1);">Place order — {{ totalFmt }}</button>
+          <p style="font-size:12px;color:#9A8C73;text-align:center;margin-top:14px;font-weight:300;">Demo checkout — no real payment is processed.</p>
+        </div>
+      </form>
+
+      <!-- summary -->
+      <div style="background:#ECE3D5;padding:30px 30px 34px;position:sticky;top:96px;">
+        <h3 style="font-family:'Marcellus',serif;font-size:22px;color:#084F51;font-weight:400;margin-bottom:20px;">In your bag</h3>
+        <div style="display:flex;flex-direction:column;gap:16px;max-height:280px;overflow-y:auto;margin-bottom:20px;">
+          <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+            <div style="display:flex;gap:13px;align-items:center;">
+              <div style="position:relative;flex:0 0 50px;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 7px,#E0D6C2 7px,#E0D6C2 14px);">
+                <span style="position:absolute;top:-7px;right:-7px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#084F51;color:#fff;font-size:10.5px;display:flex;align-items:center;justify-content:center;">{{ it.qty }}</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:2px;">
+                <span style="font-family:'Marcellus',serif;font-size:14.5px;color:#2A2620;line-height:1.2;">{{ it.name }}</span>
+                <span style="font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:#9A8C73;">{{ it.variant }}</span>
+              </div>
+              <span style="font-size:13.5px;color:#2A2620;white-space:nowrap;">{{ it.lineFmt }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <input value="{{ form.promo }}" onInput="{{ onField.promo }}" placeholder="Discount code" style="flex:1;padding:12px 14px;background:#F6F1E9;border:1px solid #D9CFBC;font-family:inherit;font-size:13px;color:#2A2620;outline:none;" />
+          <button type="button" onClick="{{ applyPromo }}" style="padding:0 18px;background:#2A2620;color:#fff;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;" style-hover="background:#084F51;">Apply</button>
+        </div>
+        <div style="border-top:1px solid #DCD0BC;padding-top:16px;">
+          <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;color:#6B6256;">
+            <span>Subtotal</span><span style="color:#2A2620;">{{ subtotalFmt }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:14px;color:#6B6256;">
+            <span>{{ deliveryLabel }}</span><span style="color:#2A2620;">{{ shippingFmt }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:18px 0 0;border-top:1px solid #DCD0BC;margin-top:9px;font-size:19px;color:#2A2620;">
+            <span style="font-family:'Marcellus',serif;">Total</span><span style="font-family:'Marcellus',serif;">{{ totalFmt }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ============ FOOTER ============ -->
+  <footer style="background:#084F51;color:#D9CEBC;padding:72px 56px 36px;">
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;padding-bottom:54px;border-bottom:1px solid rgba(217,206,188,0.16);">
+      <div>
+        <span style="font-family:'Marcellus',serif;font-size:26px;letter-spacing:0.4em;text-indent:0.4em;color:#FBF8F2;">ALESEA</span>
+        <p style="font-size:14px;line-height:1.7;color:#A99E8B;margin-top:18px;max-width:280px;font-weight:300;">Beachfront villas in La Union — and the goods to remember them by.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8B8170;margin-bottom:4px;">Shop</span>
+        <sc-for list="{{ categories }}" as="cat" hint-placeholder-count="4">
+          <button onClick="{{ cat.onClick }}" style="text-align:left;font-size:14px;color:#D9CEBC;" style-hover="color:#fff;">{{ cat.label }}</button>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8B8170;margin-bottom:4px;">Alesea</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">Our Villas & Suites</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">About</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">Book a stay</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:13px;">
+        <span style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:#8B8170;margin-bottom:4px;">Contact</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">hello@alesea.co</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">BGC, Taguig, PH</span>
+        <span style="font-size:14px;color:#D9CEBC;font-weight:300;">Instagram · Facebook</span>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding-top:24px;font-size:12px;color:#8B8170;font-weight:300;">
+      <span>© 2026 Alesea Collection. All rights reserved.</span>
+      <span>Coastal goods, shipped from the Philippines.</span>
+    </div>
+  </footer>
+
+  <!-- ============ CART DRAWER ============ -->
+  <sc-if value="{{ cartOpen }}">
+  <div>
+    <div onClick="{{ closeCart }}" style="position:fixed;inset:0;z-index:80;background:rgba(28,24,18,0.42);"></div>
+    <div style="position:fixed;top:0;right:0;z-index:90;width:420px;max-width:92vw;height:100%;background:#F6F1E9;display:flex;flex-direction:column;box-shadow:-14px 0 40px rgba(28,24,18,0.18);">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 28px;border-bottom:1px solid #E3DACB;">
+        <span style="font-family:'Marcellus',serif;font-size:22px;color:#084F51;">Your bag ({{ cartCount }})</span>
+        <button onClick="{{ closeCart }}" style="font-size:24px;color:#7C7264;line-height:1;" style-hover="color:#2A2620;">×</button>
+      </div>
+
+      <sc-if value="{{ cartEmpty }}">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;">
+          <p style="font-family:'Marcellus',serif;font-size:21px;color:#084F51;">Nothing here yet</p>
+          <button onClick="{{ closeCart }}" style="margin-top:18px;padding:13px 28px;background:var(--accent,#084F51);color:#fff;font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;">Keep shopping</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasItems }}">
+      <div style="flex:1;overflow-y:auto;padding:8px 28px;">
+        <sc-for list="{{ cartItems }}" as="it" hint-placeholder-count="2">
+          <div style="display:flex;gap:16px;padding:20px 0;border-bottom:1px solid #E8E0D0;">
+            <div style="flex:0 0 64px;aspect-ratio:4/5;background:repeating-linear-gradient(135deg,#EEE6D6,#EEE6D6 8px,#E8DFCD 8px,#E8DFCD 16px);"></div>
+            <div style="flex:1;display:flex;flex-direction:column;">
+              <div style="display:flex;justify-content:space-between;gap:10px;">
+                <span style="font-family:'Marcellus',serif;font-size:16px;color:#084F51;line-height:1.2;">{{ it.name }}</span>
+                <span style="font-size:14px;color:#2A2620;white-space:nowrap;">{{ it.lineFmt }}</span>
+              </div>
+              <span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#9A8C73;margin-top:4px;">{{ it.variant }}</span>
+              <div style="margin-top:auto;display:flex;align-items:center;justify-content:space-between;padding-top:12px;">
+                <div style="display:flex;align-items:center;border:1px solid #D9CFBC;">
+                  <button onClick="{{ it.onDec }}" style="width:30px;height:32px;font-size:15px;color:#7C7264;">−</button>
+                  <span style="width:28px;text-align:center;font-size:13px;">{{ it.qty }}</span>
+                  <button onClick="{{ it.onInc }}" style="width:30px;height:32px;font-size:15px;color:#7C7264;">+</button>
+                </div>
+                <button onClick="{{ it.onRemove }}" style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;color:#9A8C73;" style-hover="color:#084F51;">Remove</button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="padding:22px 28px;border-top:1px solid #E3DACB;background:#F0E9DC;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:14px;color:#6B6256;">
+          <span>Subtotal</span><span style="color:#2A2620;font-size:17px;font-family:'Marcellus',serif;">{{ subtotalFmt }}</span>
+        </div>
+        <p style="font-size:11.5px;color:#9A8C73;margin-bottom:16px;font-weight:300;">{{ shipHint }}</p>
+        <button onClick="{{ goCart }}" style="width:100%;padding:15px;background:var(--accent,#084F51);color:#fff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:10px;" style-hover="filter:brightness(1.07);">View bag &amp; checkout</button>
+        <button onClick="{{ closeCart }}" style="width:100%;padding:13px;font-size:11.5px;letter-spacing:0.16em;text-transform:uppercase;color:#7C7264;" style-hover="color:#2A2620;">Continue shopping</button>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- toast -->
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:120;background:#2A2620;color:#FBF8F2;padding:14px 26px;font-size:12.5px;letter-spacing:0.1em;text-transform:uppercase;box-shadow:0 8px 24px rgba(28,24,18,0.28);">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;#084F51&quot;,&quot;#0A6164&quot;,&quot;#21372D&quot;],&quot;default&quot;:&quot;#084F51&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;currency&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;PHP&quot;,&quot;USD&quot;],&quot;default&quot;:&quot;PHP&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;freeShipThreshold&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:2500,&quot;min&quot;:0,&quot;max&quot;:10000,&quot;step&quot;:100,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'home', activeCategory: 'all', productId: null,
+    selColor: null, selSize: null, selQty: 1,
+    cart: [], cartOpen: false, toast: null,
+    delivery: 'standard', payMethod: 'card', promoApplied: false,
+    orderPlaced: false, orderRef: '', orderName: '', orderEmail: '',
+    form: { email: '', phone: '', first: '', last: '', address: '', address2: '', city: '', province: '', zip: '', card: '', cardName: '', exp: '', cvc: '', promo: '' }
+  };
+
+  catLabels = { tees: 'T-Shirts', bags: 'Bags', caps: 'Caps', tumblers: 'Tumblers' };
+
+  products = [
+    { id: 't1', category: 'tees', name: 'Baroro Sunrise Tee', price: 890,
+      blurb: 'A garment-dyed cotton tee carrying a sun-faded print of the long beach at Baroro. Relaxed, soft, made to be worn until it fades just right.',
+      materials: '100% organic combed cotton, 180gsm. Garment dyed, pre-shrunk.',
+      colors: [{ name: 'Sand', hex: '#E4D8BF' }, { name: 'Sea', hex: '#6E7E72' }, { name: 'Clay', hex: '#084F51' }],
+      sizes: ['XS', 'S', 'M', 'L', 'XL'], sizeLabel: 'Size' },
+    { id: 't2', category: 'tees', name: 'Surf Town Tee', price: 890,
+      blurb: 'A relaxed, boxy tee with a screen-printed surf-town graphic. The one you reach for after a morning in the water.',
+      materials: '100% organic combed cotton, 180gsm. Water-based inks.',
+      colors: [{ name: 'Off-White', hex: '#EFE7D6' }, { name: 'Ink', hex: '#2C2A26' }],
+      sizes: ['XS', 'S', 'M', 'L', 'XL'], sizeLabel: 'Size' },
+    { id: 'b1', category: 'bags', name: 'Tammocalao Tote', price: 1290,
+      blurb: 'A heavyweight canvas tote that swallows a whole beach day — towel, book, sunscreen, the lot. Webbed handles built to last.',
+      materials: '16oz cotton canvas, cotton-webbed handles, interior pocket.',
+      colors: [{ name: 'Natural', hex: '#E4D8BF' }, { name: 'Olive', hex: '#6E7E72' }],
+      sizes: ['One size'], sizeLabel: 'Size' },
+    { id: 'b2', category: 'bags', name: 'Coastline Weekender', price: 2490,
+      blurb: 'A waxed-canvas duffel sized for villa-hopping down the coast. Leather trim that wears in beautifully.',
+      materials: 'Waxed cotton canvas, full-grain leather trim, brass hardware.',
+      colors: [{ name: 'Sand', hex: '#DBCDAE' }, { name: 'Charcoal', hex: '#3A352E' }],
+      sizes: ['One size'], sizeLabel: 'Size' },
+    { id: 'c1', category: 'caps', name: 'Sunset Cap', price: 790,
+      blurb: 'A six-panel cap with a low, easy profile and the Alesea mark embroidered at the front. For long, bright afternoons.',
+      materials: 'Brushed cotton twill, adjustable metal-buckle strap.',
+      colors: [{ name: 'Bone', hex: '#EFE7D6' }, { name: 'Terracotta', hex: '#084F51' }, { name: 'Navy', hex: '#2C3340' }],
+      sizes: ['One size'], sizeLabel: 'Size' },
+    { id: 'c2', category: 'caps', name: 'Dune Bucket Hat', price: 850,
+      blurb: 'A reversible bucket hat for the hours when the sun is high and you are not coming in. Two looks in one.',
+      materials: 'Cotton twill, fully reversible, packable.',
+      colors: [{ name: 'Natural', hex: '#E4D8BF' }, { name: 'Sea', hex: '#6E7E72' }],
+      sizes: ['S/M', 'L/XL'], sizeLabel: 'Fit' },
+    { id: 'u1', category: 'tumblers', name: 'Oeste Tumbler', price: 990,
+      blurb: 'An insulated stainless tumbler that keeps a drink cold for 24 hours by the pool. Powder-coated, fits a cupholder.',
+      materials: '18/8 stainless steel, double-wall vacuum, powder-coated finish.',
+      colors: [{ name: 'Sand', hex: '#DBCDAE' }, { name: 'Sage', hex: '#6E7E72' }],
+      sizes: ['350ml', '500ml'], sizeLabel: 'Size' },
+    { id: 'u2', category: 'tumblers', name: 'Morning Swell Bottle', price: 890,
+      blurb: 'An everyday stainless bottle that keeps pace from the surf to the sand and back. Leakproof, easy to carry.',
+      materials: 'Double-wall stainless steel, leakproof lid, BPA-free.',
+      colors: [{ name: 'Bone', hex: '#EFE7D6' }, { name: 'Clay', hex: '#084F51' }],
+      sizes: ['500ml', '750ml'], sizeLabel: 'Size' }
+  ];
+
+  fmt(n) {
+    const cur = this.props.currency || 'PHP';
+    if (cur === 'USD') return '$' + Math.round(n / 56).toLocaleString('en-US');
+    return '\u20B1' + Math.round(n).toLocaleString('en-PH');
+  }
+
+  threshold() { return this.props.freeShipThreshold ?? 2500; }
+
+  scrollGrid() {
+    requestAnimationFrame(() => {
+      const el = document.getElementById('shop-grid');
+      if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 60, behavior: 'smooth' });
+    });
+  }
+
+  goHome = () => this.setState({ screen: 'home', cartOpen: false });
+  shopCarry = () => this.setCat('bags');
+  goLookbook = () => { this.setState({ screen: 'home', cartOpen: false }); this.scrollGrid(); };
+  shopAll = () => { this.setState({ screen: 'home', activeCategory: 'all', cartOpen: false }); this.scrollGrid(); };
+  goCart = () => { this.setState({ screen: 'cart', cartOpen: false }); window.scrollTo({ top: 0 }); };
+  goCheckout = () => { this.setState({ screen: 'checkout', cartOpen: false, orderPlaced: false }); window.scrollTo({ top: 0 }); };
+  setField = (k) => (e) => { const v = e && e.target ? e.target.value : ''; this.setState(s => ({ form: { ...s.form, [k]: v } })); };
+  applyPromo = () => {
+    const code = (this.state.form.promo || '').trim().toUpperCase();
+    if (!code) return;
+    if (code === 'COAST10') { this.setState({ promoApplied: true }); this.flashToast('COAST10 applied — 10% off'); }
+    else this.flashToast('Invalid code');
+  };
+  placeOrder = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const f = this.state.form;
+    const ref = 'ALS-' + Math.random().toString(36).slice(2, 7).toUpperCase();
+    this.setState({ orderPlaced: true, orderRef: ref, orderName: (f.first || 'there'), orderEmail: (f.email || 'your inbox'), cart: [], promoApplied: false });
+    window.scrollTo({ top: 0 });
+  };
+  setCat = (c) => { this.setState({ screen: 'home', activeCategory: c }); this.scrollGrid(); };
+  toggleCart = () => this.setState(s => ({ cartOpen: !s.cartOpen }));
+  closeCart = () => this.setState({ cartOpen: false });
+
+  openProduct = (id) => {
+    const p = this.products.find(x => x.id === id);
+    this.setState({ screen: 'product', productId: id, selColor: p.colors[0].name, selSize: p.sizes[0], selQty: 1, cartOpen: false });
+    window.scrollTo({ top: 0 });
+  };
+
+  flashToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  addItem(p, color, size, qty) {
+    const key = p.id + '|' + color + '|' + size;
+    this.setState(s => {
+      const cart = s.cart.map(x => ({ ...x }));
+      const found = cart.find(x => x.key === key);
+      if (found) found.qty += qty;
+      else cart.push({ key, id: p.id, name: p.name, price: p.price, color, size, qty, category: p.category });
+      return { cart, cartOpen: true };
+    });
+    this.flashToast('Added to bag');
+  }
+
+  changeQty(key, delta) {
+    this.setState(s => {
+      let cart = s.cart.map(x => x.key === key ? { ...x, qty: x.qty + delta } : x);
+      cart = cart.filter(x => x.qty > 0);
+      return { cart };
+    });
+  }
+  removeItem(key) { this.setState(s => ({ cart: s.cart.filter(x => x.key !== key) })); }
+
+  checkout = () => this.flashToast('This is a demo checkout');
+
+  decoratedProduct(p) {
+    return {
+      id: p.id, name: p.name, category: p.category,
+      categoryLabel: this.catLabels[p.category],
+      priceFmt: this.fmt(p.price),
+      shotLabel: p.category.toUpperCase() + ' / FRONT',
+      swatches: p.colors.map(c => ({ style: { width: '12px', height: '12px', borderRadius: '50%', background: c.hex, border: '1px solid rgba(42,38,32,0.12)' } })),
+      onOpen: () => this.openProduct(p.id),
+      onAdd: (e) => { if (e && e.stopPropagation) e.stopPropagation(); this.addItem(p, p.colors[0].name, p.sizes[0], 1); }
+    };
+  }
+
+  renderVals() {
+    const accent = this.props.accent || '#084F51';
+    const { screen, activeCategory, cart } = this.state;
+    const inCat = (p) => activeCategory === 'all' ? true
+      : activeCategory === 'accessories' ? (p.category === 'caps' || p.category === 'tumblers')
+      : p.category === activeCategory;
+    const list = this.products.filter(inCat);
+
+    const shopCategories = [
+      { label: 'Apparel', slotId: 'cat-apparel', placeholder: 'Drop apparel shot', onDiscover: () => this.setCat('tees') },
+      { label: 'Bags', slotId: 'cat-bags', placeholder: 'Drop bag shot', onDiscover: () => this.setCat('bags') },
+      { label: 'Accessories', slotId: 'cat-accessories', placeholder: 'Drop accessories shot', onDiscover: () => this.setCat('accessories') }
+    ];
+
+    const categories = Object.keys(this.catLabels).map(k => ({
+      key: k, label: this.catLabels[k],
+      count: this.products.filter(p => p.category === k).length,
+      onClick: () => this.setCat(k)
+    }));
+
+    const chipDefs = [{ key: 'all', label: 'All' }].concat(categories.map(c => ({ key: c.key, label: c.label })));
+    const filterChips = chipDefs.map(c => {
+      const on = activeCategory === c.key;
+      return {
+        label: c.label, onClick: () => this.setCat(c.key),
+        style: {
+          padding: '10px 18px', fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase',
+          border: '1px solid ' + (on ? accent : '#D9CFBC'),
+          background: on ? accent : 'transparent', color: on ? '#fff' : '#7C7264'
+        }
+      };
+    });
+
+    // cart computations
+    const cartItems = cart.map(it => ({
+      key: it.key, name: it.name, qty: it.qty,
+      variant: it.color + ' · ' + it.size,
+      cat: this.catLabels[it.category].toUpperCase(),
+      lineFmt: this.fmt(it.price * it.qty),
+      onInc: () => this.changeQty(it.key, 1),
+      onDec: () => this.changeQty(it.key, -1),
+      onRemove: () => this.removeItem(it.key)
+    }));
+    const cartCount = cart.reduce((a, b) => a + b.qty, 0);
+    const rawSubtotal = cart.reduce((a, b) => a + b.price * b.qty, 0);
+    const th = this.threshold();
+    const remaining = Math.max(0, th - rawSubtotal);
+
+    // delivery + promo (checkout)
+    const deliveryDefs = [
+      { key: 'standard', label: 'Standard delivery', note: '3–5 days · nationwide', price: rawSubtotal >= th ? 0 : 150 },
+      { key: 'express', label: 'Express delivery', note: '1–2 days · Luzon', price: 280 }
+    ];
+    const delKey = this.state.delivery;
+    const delDef = deliveryDefs.find(d => d.key === delKey) || deliveryDefs[0];
+    const discount = this.state.promoApplied ? Math.round(rawSubtotal * 0.10) : 0;
+    const subtotal = rawSubtotal;
+    const onCheckout = screen === 'checkout';
+    const shipping = onCheckout ? delDef.price : (rawSubtotal === 0 || rawSubtotal >= th ? 0 : 150);
+    const total = subtotal - discount + shipping;
+
+    const deliveryOptions = deliveryDefs.map(d => {
+      const on = delKey === d.key;
+      return {
+        label: d.label, note: d.note, priceFmt: d.price === 0 ? 'Free' : this.fmt(d.price),
+        onSelect: () => this.setState({ delivery: d.key }),
+        style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '16px 18px', textAlign: 'left', cursor: 'pointer', background: on ? '#F0EADD' : '#fff', border: '1px solid ' + (on ? accent : '#E0D6C2') },
+        dot: { width: '18px', height: '18px', borderRadius: '50%', flex: '0 0 18px', border: '1px solid ' + (on ? accent : '#C9BCA3'), boxShadow: on ? 'inset 0 0 0 4px ' + accent : 'none' }
+      };
+    });
+
+    const payDefs = [{ key: 'card', label: 'Card' }, { key: 'gcash', label: 'GCash' }, { key: 'cod', label: 'Cash on delivery' }];
+    const payMethods = payDefs.map(m => {
+      const on = this.state.payMethod === m.key;
+      return {
+        label: m.label, onSelect: () => this.setState({ payMethod: m.key }),
+        style: { padding: '13px 20px', fontSize: '12.5px', letterSpacing: '0.04em', cursor: 'pointer', border: '1px solid ' + (on ? accent : '#D9CFBC'), background: on ? accent : 'transparent', color: on ? '#fff' : '#5A5247' }
+      };
+    });
+
+    const inputStyle = { padding: '13px 15px', background: '#fff', border: '1px solid #D9CFBC', fontFamily: 'inherit', fontSize: '14px', color: '#2A2620', outline: 'none' };
+    const inputStyleFull = { ...inputStyle, gridColumn: '1 / -1' };
+    const inputStyleDisabled = { ...inputStyle, gridColumn: '1 / -1', background: '#EFE9DD', color: '#9A8C73' };
+    const onField = {};
+    Object.keys(this.state.form).forEach(k => { onField[k] = this.setField(k); });
+
+    // active product
+    const ap = this.products.find(p => p.id === this.state.productId);
+    let activeProduct = null;
+    if (ap) {
+      activeProduct = {
+        name: ap.name, categoryLabel: this.catLabels[ap.category],
+        priceFmt: this.fmt(ap.price), blurb: ap.blurb, materials: ap.materials,
+        shotLabel: ap.category.toUpperCase(), selColor: this.state.selColor,
+        sizeLabel: ap.sizeLabel, qty: this.state.selQty,
+        thumbs: ['FRONT', 'BACK', 'DETAIL'],
+        colorOptions: ap.colors.map(c => {
+          const on = this.state.selColor === c.name;
+          return {
+            name: c.name, onSelect: () => this.setState({ selColor: c.name }),
+            style: {
+              width: '38px', height: '38px', borderRadius: '50%', background: c.hex,
+              boxShadow: on ? '0 0 0 2px #F6F1E9, 0 0 0 4px ' + accent : 'inset 0 0 0 1px rgba(42,38,32,0.14)',
+              cursor: 'pointer'
+            }
+          };
+        }),
+        sizeOptions: ap.sizes.map(s => {
+          const on = this.state.selSize === s;
+          return {
+            label: s, onSelect: () => this.setState({ selSize: s }),
+            style: {
+              minWidth: '52px', padding: '12px 16px', fontSize: '13px', letterSpacing: '0.04em',
+              border: '1px solid ' + (on ? accent : '#D9CFBC'),
+              background: on ? accent : 'transparent', color: on ? '#fff' : '#5A5247', cursor: 'pointer'
+            }
+          };
+        }),
+        onIncQty: () => this.setState(s => ({ selQty: s.selQty + 1 })),
+        onDecQty: () => this.setState(s => ({ selQty: Math.max(1, s.selQty - 1) })),
+        onAdd: () => this.addItem(ap, this.state.selColor, this.state.selSize, this.state.selQty),
+        related: this.products.filter(p => p.id !== ap.id && p.category !== ap.category).slice(0, 4)
+          .map(p => ({ name: p.name, priceFmt: this.fmt(p.price), onOpen: () => this.openProduct(p.id) }))
+      };
+    }
+
+    return {
+      accent,
+      isHome: screen === 'home', isProduct: screen === 'product', isCart: screen === 'cart', isCheckout: screen === 'checkout',
+      checkoutActive: screen === 'checkout' && !this.state.orderPlaced && cartItems.length > 0,
+      orderPlaced: this.state.orderPlaced,
+      orderRef: this.state.orderRef, orderName: this.state.orderName, orderEmail: this.state.orderEmail,
+      categories, filterChips, shopCategories,
+      products: list.map(p => this.decoratedProduct(p)),
+      activeProduct,
+      cartItems, cartCount, cartOpen: this.state.cartOpen,
+      cartEmpty: cartItems.length === 0, hasItems: cartItems.length > 0,
+      subtotalFmt: this.fmt(subtotal),
+      shippingFmt: shipping === 0 ? 'Free' : this.fmt(shipping),
+      shipLabel: 'Shipping',
+      deliveryLabel: onCheckout ? delDef.label : 'Shipping',
+      totalFmt: this.fmt(total),
+      freeShipFmt: this.fmt(th),
+      form: this.state.form, onField,
+      deliveryOptions, payMethods,
+      payIsCard: this.state.payMethod === 'card', payIsCod: this.state.payMethod === 'cod',
+      inputStyle, inputStyleFull, inputStyleDisabled,
+      onPlaceOrder: this.placeOrder, applyPromo: this.applyPromo,
+      goCheckout: this.goCheckout,
+      shipHint: remaining > 0 ? 'Add ' + this.fmt(remaining) + ' more for free shipping.' : 'You\u2019ve unlocked free shipping.',
+      goHome: this.goHome, goLookbook: this.goLookbook, shopAll: this.shopAll, goCart: this.goCart, shopCarry: this.shopCarry,
+      toggleCart: this.toggleCart, closeCart: this.closeCart, checkout: this.checkout,
+      toast: this.state.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
