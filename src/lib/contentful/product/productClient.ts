@@ -84,6 +84,7 @@ function normalize(
     colors: toColors(f.colors),
     sizes: toSizes(f.sizes),
     sizeLabel: f.sizeLabel ?? "Size",
+    comingSoon: f.comingSoon === true,
     images: toImages(
       f.images as (Asset<undefined, string> | undefined)[] | undefined,
       f.title,

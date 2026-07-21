@@ -27,6 +27,8 @@ export interface ProductSkeleton {
     colors: EntryFieldTypes.Object<IProductColorField[]>;
     images: EntryFieldTypes.Array<EntryFieldTypes.AssetLink>;
     available: EntryFieldTypes.Boolean;
+    /** When true, the product is a teaser: no price/variants, "Notify Me" only. */
+    comingSoon?: EntryFieldTypes.Boolean;
     order: EntryFieldTypes.Integer;
   };
 }

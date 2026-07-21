@@ -118,9 +118,6 @@ export default async function ProductPage({ params }: IProductPageProps) {
               <span className="font-serif text-[34px] text-[#C4B79C]">
                 {product.name}
               </span>
-              <span className="font-mono text-[10px] tracking-[0.16em] uppercase text-[#B6A988]">
-                {product.category.toUpperCase()} — drop product photo
-              </span>
             </div>
           )}
         </div>
@@ -138,7 +135,11 @@ export default async function ProductPage({ params }: IProductPageProps) {
           <h3 className="mb-7 font-serif text-[28px] text-teal">
             Complete the set
           </h3>
-          <div className="grid grid-cols-2 gap-[26px] lg:grid-cols-4">
+          <div
+            className={`grid grid-cols-2 gap-[26px] ${
+              related.length <= 2 ? "lg:grid-cols-2" : "lg:grid-cols-4"
+            }`}
+          >
             {related.map((r) => {
               const thumb = r.images[0];
               return (
@@ -169,7 +170,9 @@ export default async function ProductPage({ params }: IProductPageProps) {
                       {r.name}
                     </span>
                     <span className="text-sm text-stone">
-                      {formatPrice(r.price, r.currency)}
+                      {r.comingSoon
+                        ? "Coming soon"
+                        : formatPrice(r.price, r.currency)}
                     </span>
                   </div>
                 </Link>

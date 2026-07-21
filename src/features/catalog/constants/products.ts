@@ -1,8 +1,11 @@
 import type { CatalogCategory, ICatalogProduct } from "../types";
 
+/** Slug of the coming-soon Weekender Tote — referenced by footer + cards. */
+export const WEEKENDER_TOTE_SLUG = "weekender-tote";
+
 /** Human labels for category keys. */
 export const CATEGORY_LABELS: Record<CatalogCategory, string> = {
-  tees: "T-Shirts",
+  tees: "Tees",
   bags: "Bags",
   caps: "Caps",
   tumblers: "Tumblers",
@@ -22,150 +25,52 @@ export const SHIPPING = {
  * Replace with Contentful (`contentful-domain-scaffolder`) once a `product`
  * content type exists in the space.
  */
+const TEE_MATERIALS =
+  "230 GSM premium cotton blend. Ribbed collar holds its shape, wash after wash. Deep dye, no fading under summer sun.";
+
 export const PRODUCTS: ICatalogProduct[] = [
   {
     id: "t1",
-    slug: "baroro-sunrise-tee",
+    slug: "weekender-tee",
     category: "tees",
-    name: "Baroro Sunrise Tee",
-    price: 890,
+    name: "Alesea Weekender Tee",
+    price: 1100,
     blurb:
-      "A garment-dyed cotton tee carrying a sun-faded print of the long beach at Baroro. Relaxed, soft, made to be worn until it fades just right.",
-    materials: "100% organic combed cotton, 180gsm. Garment dyed, pre-shrunk.",
-    colors: [
-      { name: "Sand", hex: "#E4D8BF" },
-      { name: "Sea", hex: "#6E7E72" },
-      { name: "Clay", hex: "#084F51" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL"],
+      "A sun-warmed tee that goes best with a fresh tan. Oversized, relaxed fit, Alesea Weekender script on the chest, and on the back, a collector's stamp of everything a good Alesea weekend is made of. Morning coffee, open water, irresistible beddings, no plans.",
+    materials: TEE_MATERIALS,
+    colors: [{ name: "Beige", hex: "#D9CBB2" }],
+    sizes: ["S", "M", "L", "XL", "2XL"],
     sizeLabel: "Size",
     currency: "PHP",
     images: [],
   },
   {
     id: "t2",
-    slug: "surf-town-tee",
+    slug: "palm-tee",
     category: "tees",
-    name: "Surf Town Tee",
-    price: 890,
+    name: "Alesea Palm Tee",
+    price: 1100,
     blurb:
-      "A relaxed, boxy tee with a screen-printed surf-town graphic. The one you reach for after a morning in the water.",
-    materials: "100% organic combed cotton, 180gsm. Water-based inks.",
-    colors: [
-      { name: "Off-White", hex: "#EFE7D6" },
-      { name: "Ink", hex: "#2C2A26" },
-    ],
-    sizes: ["XS", "S", "M", "L", "XL"],
+      "Clean and simple, ready for sand and city. Oversized, relaxed fit, palm graphic on the left chest. Flip it and you get the full story: a collector's stamp of your favorite Alesea escape. Wear it on the drive down. Wear it on the way back. Probably wear it the week after too.",
+    materials: TEE_MATERIALS,
+    colors: [{ name: "White", hex: "#F5F5F0" }],
+    sizes: ["S", "M", "L", "XL", "2XL"],
     sizeLabel: "Size",
     currency: "PHP",
     images: [],
   },
   {
     id: "b1",
-    slug: "tammocalao-tote",
+    slug: "weekender-tote",
     category: "bags",
-    name: "Tammocalao Tote",
-    price: 1290,
+    name: "Alesea Weekender Tote",
+    price: 0,
+    comingSoon: true,
     blurb:
-      "A heavyweight canvas tote that swallows a whole beach day — towel, book, sunscreen, the lot. Webbed handles built to last.",
-    materials: "16oz cotton canvas, cotton-webbed handles, interior pocket.",
-    colors: [
-      { name: "Natural", hex: "#E4D8BF" },
-      { name: "Olive", hex: "#6E7E72" },
-    ],
-    sizes: ["One size"],
-    sizeLabel: "Size",
-    currency: "PHP",
-    images: [],
-  },
-  {
-    id: "b2",
-    slug: "coastline-weekender",
-    category: "bags",
-    name: "Coastline Weekender",
-    price: 2490,
-    blurb:
-      "A waxed-canvas duffel sized for villa-hopping down the coast. Leather trim that wears in beautifully.",
-    materials: "Waxed cotton canvas, full-grain leather trim, brass hardware.",
-    colors: [
-      { name: "Sand", hex: "#DBCDAE" },
-      { name: "Charcoal", hex: "#3A352E" },
-    ],
-    sizes: ["One size"],
-    sizeLabel: "Size",
-    currency: "PHP",
-    images: [],
-  },
-  {
-    id: "c1",
-    slug: "sunset-cap",
-    category: "caps",
-    name: "Sunset Cap",
-    price: 790,
-    blurb:
-      "A six-panel cap with a low, easy profile and the Alesea mark embroidered at the front. For long, bright afternoons.",
-    materials: "Brushed cotton twill, adjustable metal-buckle strap.",
-    colors: [
-      { name: "Bone", hex: "#EFE7D6" },
-      { name: "Terracotta", hex: "#084F51" },
-      { name: "Navy", hex: "#2C3340" },
-    ],
-    sizes: ["One size"],
-    sizeLabel: "Size",
-    currency: "PHP",
-    images: [],
-  },
-  {
-    id: "c2",
-    slug: "dune-bucket-hat",
-    category: "caps",
-    name: "Dune Bucket Hat",
-    price: 850,
-    blurb:
-      "A reversible bucket hat for the hours when the sun is high and you are not coming in. Two looks in one.",
-    materials: "Cotton twill, fully reversible, packable.",
-    colors: [
-      { name: "Natural", hex: "#E4D8BF" },
-      { name: "Sea", hex: "#6E7E72" },
-    ],
-    sizes: ["S/M", "L/XL"],
-    sizeLabel: "Fit",
-    currency: "PHP",
-    images: [],
-  },
-  {
-    id: "u1",
-    slug: "oeste-tumbler",
-    category: "tumblers",
-    name: "Oeste Tumbler",
-    price: 990,
-    blurb:
-      "An insulated stainless tumbler that keeps a drink cold for 24 hours by the pool. Powder-coated, fits a cupholder.",
-    materials:
-      "18/8 stainless steel, double-wall vacuum, powder-coated finish.",
-    colors: [
-      { name: "Sand", hex: "#DBCDAE" },
-      { name: "Sage", hex: "#6E7E72" },
-    ],
-    sizes: ["350ml", "500ml"],
-    sizeLabel: "Size",
-    currency: "PHP",
-    images: [],
-  },
-  {
-    id: "u2",
-    slug: "morning-swell-bottle",
-    category: "tumblers",
-    name: "Morning Swell Bottle",
-    price: 890,
-    blurb:
-      "An everyday stainless bottle that keeps pace from the surf to the sand and back. Leakproof, easy to carry.",
-    materials: "Double-wall stainless steel, leakproof lid, BPA-free.",
-    colors: [
-      { name: "Bone", hex: "#EFE7D6" },
-      { name: "Clay", hex: "#084F51" },
-    ],
-    sizes: ["500ml", "750ml"],
+      "The Weekender Tote is on its way. Sign up and we'll let you know the moment it lands.",
+    materials: "",
+    colors: [],
+    sizes: [],
     sizeLabel: "Size",
     currency: "PHP",
     images: [],
@@ -176,17 +81,16 @@ export function getProductBySlug(slug: string): ICatalogProduct | undefined {
   return PRODUCTS.find((p) => p.slug === slug);
 }
 
+/**
+ * Related products for "Complete the set". With the trimmed catalog the useful
+ * pairing for a tee is the other tee plus the Tote, so we simply surface every
+ * other product in the pool (order preserved). Kept generic so it still works
+ * if the catalog grows.
+ */
 export function getRelatedProducts(
   product: ICatalogProduct,
   limit = 4,
   pool: ICatalogProduct[] = PRODUCTS,
 ): ICatalogProduct[] {
-  const related = pool.filter(
-    (p) => p.id !== product.id && p.category !== product.category,
-  );
-  // Fallback: if cross-category yields nothing (tiny catalog), allow any other
-  // product so "Complete the set" is never empty when others exist.
-  const source =
-    related.length > 0 ? related : pool.filter((p) => p.id !== product.id);
-  return source.slice(0, limit);
+  return pool.filter((p) => p.id !== product.id).slice(0, limit);
 }

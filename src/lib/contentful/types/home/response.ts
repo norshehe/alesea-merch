@@ -22,7 +22,6 @@ export interface HomePageSkeleton {
     heroBody: EntryFieldTypes.Text;
     heroImage: EntryFieldTypes.AssetLink;
     heroPrimaryCta: EntryFieldTypes.Symbol;
-    heroSecondaryCta: EntryFieldTypes.Symbol;
     categoryEyebrow: EntryFieldTypes.Symbol;
     categoryHeading: EntryFieldTypes.Symbol;
     categoryBody: EntryFieldTypes.Text;
@@ -32,15 +31,12 @@ export interface HomePageSkeleton {
     assurances: EntryFieldTypes.Object<IAssuranceField[]>;
     editorialEyebrow: EntryFieldTypes.Symbol;
     editorialHeading: EntryFieldTypes.Symbol;
-    editorialBody: EntryFieldTypes.Text;
-    editorialQuote: EntryFieldTypes.Text;
     editorialImage: EntryFieldTypes.AssetLink;
     editorialCta: EntryFieldTypes.Symbol;
     carryEyebrow: EntryFieldTypes.Symbol;
     carryHeading: EntryFieldTypes.Symbol;
     carryBody: EntryFieldTypes.Text;
     carryImage: EntryFieldTypes.AssetLink;
-    carryCta: EntryFieldTypes.Symbol;
     shorelineHandle: EntryFieldTypes.Symbol;
     shorelineHeading: EntryFieldTypes.Symbol;
     shorelineBody: EntryFieldTypes.Text;

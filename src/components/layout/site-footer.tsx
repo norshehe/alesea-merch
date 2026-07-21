@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { NavLink } from "@/components/layout/nav-link";
-import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
-import type { CatalogCategory } from "@/features/catalog/types";
+import { WEEKENDER_TOTE_SLUG } from "@/features/catalog/constants/products";
 import type { ISiteSettings } from "@/lib/contentful/siteSettings/siteSettingsClient";
 
 const ALESEA_LINK =
   "text-left text-sm font-light text-[#D9CEBC] transition-colors hover:text-white";
+const SHOP_LINK =
+  "text-left text-sm text-[#D9CEBC] transition-colors hover:text-white";
+const COL_HEADING =
+  "mb-1 text-[11px] tracking-[0.2em] uppercase text-[#8B8170]";
 
-const CATEGORY_KEYS = Object.keys(CATEGORY_LABELS) as CatalogCategory[];
+// TODO: move to a Contentful siteSettings field once a phone field exists.
+const PHONE = "(+63) 968 869 8918";
 
 interface ISiteFooterProps {
   settings: ISiteSettings;
@@ -18,40 +22,50 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
     <footer className="bg-teal px-6 pt-[72px] pb-9 text-[#D9CEBC] sm:px-14">
       <div className="grid grid-cols-1 gap-10 border-b border-[#D9CEBC]/[0.16] pb-[54px] sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
-          <span className="font-serif text-[26px] tracking-[0.4em] [text-indent:0.4em] text-foam">
-            ALESEA
+          <span className="flex flex-col leading-none">
+            <span className="font-serif text-[26px] tracking-[0.4em] [text-indent:0.4em] text-foam">
+              ALESEA
+            </span>
+            <span className="mt-[6px] text-[8.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-foam">
+              Lifestyle
+            </span>
           </span>
           <p className="mt-[18px] max-w-[280px] text-sm leading-[1.7] font-light text-[#A99E8B]">
             {settings.footerBlurb}
           </p>
+          <Link
+            href="/#shop-grid"
+            className="mt-5 inline-block rounded-full border border-foam bg-foam px-6 py-3 text-[11px] tracking-[0.18em] uppercase text-teal transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foam"
+          >
+            Shop the Collection
+          </Link>
         </div>
 
         <div className="flex flex-col gap-[13px]">
-          <span className="mb-1 text-[11px] tracking-[0.2em] uppercase text-[#8B8170]">
-            Shop
-          </span>
-          {CATEGORY_KEYS.map((key) => (
-            <Link
-              key={key}
-              href="/#shop-grid"
-              className="text-left text-sm text-[#D9CEBC] transition-colors hover:text-white"
-            >
-              {CATEGORY_LABELS[key]}
-            </Link>
-          ))}
+          <span className={COL_HEADING}>Shop</span>
+          <Link href="/#shop-grid" className={SHOP_LINK}>
+            Tees
+          </Link>
+          <Link href={`/products/${WEEKENDER_TOTE_SLUG}`} className={SHOP_LINK}>
+            Tote · Coming Soon
+          </Link>
         </div>
 
         <div className="flex flex-col gap-[13px]">
-          <span className="mb-1 text-[11px] tracking-[0.2em] uppercase text-[#8B8170]">
-            Alesea
-          </span>
+          <span className={COL_HEADING}>Alesea</span>
+          <NavLink href="https://alesea.co" className={ALESEA_LINK}>
+            alesea.co
+          </NavLink>
           <NavLink
             href="https://www.alesea.co/villas---suites"
             className={ALESEA_LINK}
           >
-            Villas &amp; Suites
+            Villas and Suites
           </NavLink>
-          <NavLink href="https://www.alesea.co/about-alesea" className={ALESEA_LINK}>
+          <NavLink
+            href="https://www.alesea.co/about-alesea"
+            className={ALESEA_LINK}
+          >
             About
           </NavLink>
           <NavLink href={settings.bookNowUrl} newTab className={ALESEA_LINK}>
@@ -60,9 +74,7 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
         </div>
 
         <div className="flex flex-col gap-[13px]">
-          <span className="mb-1 text-[11px] tracking-[0.2em] uppercase text-[#8B8170]">
-            Contact
-          </span>
+          <span className={COL_HEADING}>Contact</span>
           {settings.contactEmail ? (
             <NavLink
               href={`mailto:${settings.contactEmail}`}
@@ -71,9 +83,9 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
               {settings.contactEmail}
             </NavLink>
           ) : null}
-          <span className="text-sm font-light text-[#D9CEBC]">
-            {settings.contactAddress}
-          </span>
+          <NavLink href={`tel:${PHONE.replace(/[^\d+]/g, "")}`} className={ALESEA_LINK}>
+            {PHONE}
+          </NavLink>
           {settings.socialLinks.length > 0 ? (
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
               {settings.socialLinks.map((link) => (
@@ -95,9 +107,11 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 pt-6 text-xs font-light text-[#8B8170] sm:flex-row sm:justify-between">
-        <span>© 2026 Alesea Collection. All rights reserved.</span>
-        <span>Coastal goods, shipped from the Philippines.</span>
+      <div className="pt-6 text-xs font-light text-[#8B8170]">
+        <span>
+          © 2026 Alesea Collection. All rights reserved. Coastal goods, shipped
+          from the Philippines.
+        </span>
       </div>
     </footer>
   );

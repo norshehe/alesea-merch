@@ -15,11 +15,10 @@ const HOME_FALLBACK: IHomeContent = {
   heroEyebrow: "The Alesea Shop · La Union",
   heroHeading: "Carry the coast home.",
   heroBody:
-    "Tees, bags, caps and tumblers made for slow mornings and long days by the water. A little piece of the villa, wherever you go.",
+    "Made for quiet getaways and sunny weekends. Tees and pieces of your favorite stay to bring home.",
   heroImage:
     "https://lirp.cdn-website.com/a93d3aad/dms3rep/multi/opt/Pool+View-2280w.jpg",
   heroPrimaryCta: "Shop the collection",
-  heroSecondaryCta: "Lookbook",
   categoryEyebrow: "Shop by category",
   categoryHeading: "Three ways to bring the beach home.",
   categoryBody:
@@ -31,28 +30,26 @@ const HOME_FALLBACK: IHomeContent = {
   ],
   assurances: [
     {
-      title: "Built for movement",
-      body: "Performance-cotton blends that flex with you from warm-up to wind-down.",
+      title: "Heavyweight, premium material",
+      body: "230 GSM cotton blend.",
     },
     {
-      title: "Conscious fabrics",
-      body: "Organic and water-resistant materials chosen to last more than a season.",
+      title: "Oversized, unisex fit",
+      body: "Wear easy from day one.",
     },
     {
-      title: "Fast island shipping",
-      body: "Packed and dispatched quickly so your kit is ready when you are.",
+      title: "Heavy ribbed collar",
+      body: "Designed to keep its shape, wash after wash.",
     },
     {
-      title: "Wear-it-in guarantee",
-      body: "If it doesn’t move the way you do, send it back — no fuss.",
+      title: "Color that stays true",
+      body: "Deep dye, no fading under summer sun.",
     },
   ],
   editorialEyebrow: "Made for the morning swim",
   editorialHeading: "Designed at the villa. Worn down the coast.",
-  editorialBody:
-    "Each piece is drawn from a place we love — the long beach at Baroro, the two pools at Tammocalao, the surf town mornings. Natural fabrics, muted dyes, built to be lived in.",
-  editorialQuote:
-    "“A place — and now a wardrobe — you can return to with confidence.”",
+  // The editorial section is now a tee gallery (see editorial-split.tsx); its
+  // old body paragraph + quote were removed from the content shape entirely.
   editorialImage:
     "https://lirp.cdn-website.com/a93d3aad/dms3rep/multi/opt/Bath+Amenities-909h.jpg",
   editorialCta: "Shop everything",
@@ -61,7 +58,6 @@ const HOME_FALLBACK: IHomeContent = {
   carryBody:
     "From market runs to island hops, the Carry line holds the whole day. Water-resistant canvas, wipe-clean linings, and straps built for the boat — so you can pack light and stay long.",
   carryImage: null,
-  carryCta: "Shop Alesea Carry",
   shorelineHandle: "@aleseacollection",
   shorelineHeading: "Spotted on the shoreline.",
   shorelineBody:
@@ -106,10 +102,6 @@ export async function getHomeContent(): Promise<IHomeContent> {
     heroBody: str(remote.heroBody, HOME_FALLBACK.heroBody),
     heroImage: remote.heroImage ?? HOME_FALLBACK.heroImage,
     heroPrimaryCta: str(remote.heroPrimaryCta, HOME_FALLBACK.heroPrimaryCta),
-    heroSecondaryCta: str(
-      remote.heroSecondaryCta,
-      HOME_FALLBACK.heroSecondaryCta,
-    ),
     categoryEyebrow: str(remote.categoryEyebrow, HOME_FALLBACK.categoryEyebrow),
     categoryHeading: str(remote.categoryHeading, HOME_FALLBACK.categoryHeading),
     categoryBody: str(remote.categoryBody, HOME_FALLBACK.categoryBody),
@@ -123,15 +115,12 @@ export async function getHomeContent(): Promise<IHomeContent> {
       remote.editorialHeading,
       HOME_FALLBACK.editorialHeading,
     ),
-    editorialBody: str(remote.editorialBody, HOME_FALLBACK.editorialBody),
-    editorialQuote: str(remote.editorialQuote, HOME_FALLBACK.editorialQuote),
     editorialImage: remote.editorialImage ?? HOME_FALLBACK.editorialImage,
     editorialCta: str(remote.editorialCta, HOME_FALLBACK.editorialCta),
     carryEyebrow: str(remote.carryEyebrow, HOME_FALLBACK.carryEyebrow),
     carryHeading: str(remote.carryHeading, HOME_FALLBACK.carryHeading),
     carryBody: str(remote.carryBody, HOME_FALLBACK.carryBody),
     carryImage: remote.carryImage ?? HOME_FALLBACK.carryImage,
-    carryCta: str(remote.carryCta, HOME_FALLBACK.carryCta),
     shorelineHandle: str(remote.shorelineHandle, HOME_FALLBACK.shorelineHandle),
     shorelineHeading: str(
       remote.shorelineHeading,

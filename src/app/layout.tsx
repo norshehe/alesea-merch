@@ -26,9 +26,9 @@ const playfairDisplay = Playfair_Display({
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "Alesea · The Shop",
+  title: "Alesea Lifestyle",
   description:
-    "Tees, bags, caps and tumblers made for slow mornings and long days by the water — coastal goods from La Union, Philippines.",
+    "Tees and pieces of your favorite stay to bring home — coastal apparel from La Union, Philippines.",
 };
 
 export default async function RootLayout({

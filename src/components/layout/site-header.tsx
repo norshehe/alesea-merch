@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart.store";
 import { NavLink } from "@/components/layout/nav-link";
 import type { INavLink } from "@/lib/contentful/siteSettings/siteSettingsClient";
@@ -38,15 +39,19 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-60 flex h-[74px] items-center justify-between border-b border-line bg-cream/[0.88] px-5 backdrop-blur-[14px] sm:px-10">
       <nav className="flex flex-1 items-center gap-5 sm:gap-[30px]">
-        {navLinks.map((link, index) => (
+        <NavLink
+          href="https://alesea.co"
+          className={`${NAV_LINK} -ml-2 flex min-h-11 min-w-11 items-center justify-center gap-1.5 text-stone hover:text-ink sm:ml-0 sm:min-w-0 sm:justify-start`}
+          aria-label="Back to alesea.co"
+        >
+          <ArrowLeft className="size-3.5" strokeWidth={1.6} aria-hidden />
+          <span className="hidden sm:inline">Back to Alesea</span>
+        </NavLink>
+        {navLinks.map((link) => (
           <NavLink
             key={`${link.label}-${link.href}`}
             href={link.href}
-            className={
-              index === 0
-                ? `${NAV_LINK} text-ink`
-                : `${NAV_LINK} hidden text-stone hover:text-ink sm:inline`
-            }
+            className={`${NAV_LINK} hidden text-stone hover:text-ink sm:inline`}
           >
             {link.label}
           </NavLink>
@@ -56,13 +61,13 @@ export function SiteHeader({
       <Link
         href="/"
         className="flex flex-col items-center leading-none"
-        aria-label="Alesea — The Shop, home"
+        aria-label="Alesea Lifestyle, home"
       >
         <span className="font-serif text-[25px] tracking-[0.42em] [text-indent:0.42em] text-teal">
           ALESEA
         </span>
         <span className="mt-[5px] text-[8.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-teal">
-          The Shop
+          Lifestyle
         </span>
       </Link>
 
