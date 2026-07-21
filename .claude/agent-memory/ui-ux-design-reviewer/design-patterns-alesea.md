@@ -89,3 +89,21 @@ navLinks: Array.isArray(remote.navLinks) && remote.navLinks.length > 0
 ## Footer Token Pattern
 
 Footer is on teal background and uses its own lighter text hierarchy (#D9CEBC body, #A99E8B blurb, #8B8170 section labels). These should become named tokens: `--color-foam-dim`, `--color-shell-dim`, `--color-stone-dim` or similar teal-on-dark variants.
+
+## Forms: codebase convention diverges from the `form-builder` skill doc
+
+Every form in the app (`checkout-view.tsx`, the new `email-signup-form.tsx`) uses raw styled `<input>`/`<button>` + manual RHF `register()`, not the shadcn `Form`/`FormField`/`FormControl`/`FormMessage`/`Input`/`Button` primitives the `form-builder` skill and CLAUDE.md describe. `src/components/ui/form.tsx`, `input.tsx`, `button.tsx` exist but are unused across `src/features/**`. This is a real, established (if non-compliant) codebase pattern — flag new forms as Major for skill-doc deviation, but don't treat it as a novel regression; it's consistent with prior art. Worth a real refactor pass eventually to converge both on shadcn primitives.
+
+## Header "Back to Alesea" link — tap target
+
+`site-header.tsx` added a persistent `<ArrowLeft/>` + "Back to Alesea" `NavLink` at the start of the left nav. On mobile the text is `hidden sm:inline`, leaving only the icon (`size-3.5` = 14px) with no padding as the tap target — well under the 44px minimum, and it sits on every page (sticky header). `NavLink` (`site-header.tsx`/`nav-link.tsx`) has no built-in padding; callers must add their own hit-area sizing.
+
+## Coming-soon product card breaks grid uniformity
+
+`product-card.tsx`'s `product.comingSoon` branch renders a materially different card anatomy — adds a blurb paragraph and a full `EmailSignupForm` (input + button) inside the grid tile — while sibling cards in the same `ProductGrid` are just image/category/name/price/swatches. This taller card stretches the shared grid row and reads as visually inconsistent. Prefer keeping the *grid* tile minimal (name + "Notify me" link to the PDP) and reserving the full email-capture form for the product detail page, which already has its own `comingSoon` branch in `product-detail.tsx`.
+
+## CMS fields going hardcoded / orphaned (content-boundary regressions)
+
+Watch for components hardcoding copy/data that a Contentful-backed settings/content type still fetches — this silently breaks CMS editability:
+- `site-footer.tsx` hardcodes the footer blurb ("We can't wait to see you in these.") and a `PHONE` const, even though `ISiteSettings.footerBlurb` and `.contactAddress` are still fetched/typed and now go unused.
+- `IHomeContent.heroSecondaryCta` and `.carryCta` are still fetched from Contentful (`homeClient.ts`) but no longer rendered anywhere (`hero.tsx` dropped the secondary CTA link; `carry-feature.tsx` replaced its CTA link with `EmailSignupForm`). Orphaned schema fields — either wire them back up or remove from the content type/response shape.
