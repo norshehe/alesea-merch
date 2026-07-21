@@ -10,7 +10,8 @@ Checkout in alesea-merch persists a real sales order to Airtable on submit — o
 **Why:** The store has no auth and no payment processing; orders are fulfilled manually, so Airtable is the lightweight order ledger.
 
 **How to apply:**
-- Server-only Airtable client lives at `src/lib/airtable/index.ts` (`import "server-only"` at top): `isAirtableConfigured()` + `createAirtableRecord(fields)`. Never call it from client code; never use a `NEXT_PUBLIC_` Airtable var.
+- Server-only Airtable client lives at `src/lib/airtable/index.ts` (`import "server-only"` at top): `isAirtableConfigured()` + `createAirtableRecord(fields, table = ORDERS_TABLE)`. It exports `ORDERS_TABLE` and `SIGNUPS_TABLE` (env `AIRTABLE_ORDERS_TABLE`/`AIRTABLE_SIGNUPS_TABLE`). Never call it from client code; never use a `NEXT_PUBLIC_` Airtable var.
+- Email capture reuses this: `captureEmail({email, source})` server action at `src/features/catalog/server/capture-email.ts` writes `{Email, Source}` to `SIGNUPS_TABLE` (omits `Created At` — Airtable created-time fields are read-only). Reusable client form `EmailSignupForm` (`src/features/catalog/components/email-signup-form.tsx`, RHF+Zod) posts to it. Same graceful-degradation shape as `placeOrder`.
 - Server Action `placeOrder` at `src/features/checkout/server/place-order.ts` (`"use server"`) owns reference generation (`generateOrderRef`) and Airtable mapping. Input type `IPlaceOrderInput`.
 - Graceful degradation: if `!isAirtableConfigured()`, it warns and still returns `{ ok: true, reference }` so local/demo flows complete without env vars. Configured failures return a friendly `{ ok: false, error }` (raw error only logged).
 - On `!res.ok` the cart is NOT cleared (let user retry). See [[cart-line-currency]] for per-line money formatting.

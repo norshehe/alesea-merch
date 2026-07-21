@@ -34,6 +34,11 @@ export interface ICatalogProduct {
    * falls back to the `dc-stripe` placeholder in that case.
    */
   images: ICatalogImage[];
+  /**
+   * Pre-launch teaser flag. When true the product has no purchasable price:
+   * grid/detail replace price + "Add to bag" with an email-capture form.
+   */
+  comingSoon?: boolean;
 }
 
 /** Normalized product image (subset of the Contentful asset). */

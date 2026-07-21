@@ -27,7 +27,6 @@ export interface IHomeContent {
   heroBody: string;
   heroImage: string | null;
   heroPrimaryCta: string;
-  heroSecondaryCta: string;
   categoryEyebrow: string;
   categoryHeading: string;
   categoryBody: string;
@@ -35,15 +34,12 @@ export interface IHomeContent {
   assurances: IAssurance[];
   editorialEyebrow: string;
   editorialHeading: string;
-  editorialBody: string;
-  editorialQuote: string;
   editorialImage: string | null;
   editorialCta: string;
   carryEyebrow: string;
   carryHeading: string;
   carryBody: string;
   carryImage: string | null;
-  carryCta: string;
   shorelineHandle: string;
   shorelineHeading: string;
   shorelineBody: string;
@@ -109,7 +105,6 @@ export async function getHomeContentFromContentful(): Promise<IHomeContent | nul
     heroBody: f.heroBody ?? "",
     heroImage: assetUrl(f.heroImage as Asset<undefined, string> | undefined),
     heroPrimaryCta: f.heroPrimaryCta ?? "",
-    heroSecondaryCta: f.heroSecondaryCta ?? "",
     categoryEyebrow: f.categoryEyebrow ?? "",
     categoryHeading: f.categoryHeading ?? "",
     categoryBody: f.categoryBody ?? "",
@@ -121,8 +116,6 @@ export async function getHomeContentFromContentful(): Promise<IHomeContent | nul
     assurances: toAssurances(f.assurances),
     editorialEyebrow: f.editorialEyebrow ?? "",
     editorialHeading: f.editorialHeading ?? "",
-    editorialBody: f.editorialBody ?? "",
-    editorialQuote: f.editorialQuote ?? "",
     editorialImage: assetUrl(
       f.editorialImage as Asset<undefined, string> | undefined,
     ),
@@ -131,7 +124,6 @@ export async function getHomeContentFromContentful(): Promise<IHomeContent | nul
     carryHeading: f.carryHeading ?? "",
     carryBody: f.carryBody ?? "",
     carryImage: assetUrl(f.carryImage as Asset<undefined, string> | undefined),
-    carryCta: f.carryCta ?? "",
     shorelineHandle: f.shorelineHandle ?? "",
     shorelineHeading: f.shorelineHeading ?? "",
     shorelineBody: f.shorelineBody ?? "",

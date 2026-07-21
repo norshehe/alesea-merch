@@ -9,7 +9,10 @@ import "server-only";
 
 const API_KEY = process.env.AIRTABLE_API_KEY;
 const BASE_ID = process.env.AIRTABLE_BASE_ID;
-const TABLE = process.env.AIRTABLE_ORDERS_TABLE ?? "Orders";
+
+/** Airtable table names, resolved from env with sensible defaults. */
+export const ORDERS_TABLE = process.env.AIRTABLE_ORDERS_TABLE ?? "Orders";
+export const SIGNUPS_TABLE = process.env.AIRTABLE_SIGNUPS_TABLE ?? "Signups";
 
 /** True when every required Airtable env var is present. */
 export function isAirtableConfigured(): boolean {
@@ -21,19 +24,22 @@ interface IAirtableErrorBody {
 }
 
 /**
- * Create a single record in the configured Airtable table.
+ * Create a single record in an Airtable table (defaults to the Orders table).
  * `typecast: true` lets single-select fields (e.g. Status) auto-create options.
  *
+ * @param fields Record field map to write.
+ * @param table Table name to write to. Defaults to {@link ORDERS_TABLE}.
  * @throws Error with the HTTP status and Airtable error message on non-2xx.
  */
 export async function createAirtableRecord(
   fields: Record<string, unknown>,
+  table: string = ORDERS_TABLE,
 ): Promise<{ id: string }> {
   if (!API_KEY || !BASE_ID) {
     throw new Error("Airtable is not configured.");
   }
 
-  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(TABLE)}`;
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`;
 
   const response = await fetch(url, {
     method: "POST",

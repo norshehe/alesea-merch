@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { useCartStore } from "@/store/cart.store";
 import { useSettings } from "@/app/providers/settings-provider";
 import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
+import { EmailSignupForm } from "@/features/catalog/components/email-signup-form";
 import type { ICatalogProduct } from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
 import { stockStatus, variantKey } from "@/features/catalog/lib/stock";
@@ -40,6 +41,28 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
     add(product, color, size, qty);
     toast("Added to bag");
   };
+
+  // Coming-soon products aren't purchasable — no price/variants/add-to-bag.
+  // Show the teaser plus the email-capture form instead.
+  if (product.comingSoon) {
+    return (
+      <div className="max-w-[460px]">
+        <span className="text-[11px] tracking-[0.24em] uppercase text-clay">
+          {CATEGORY_LABELS[product.category]}
+        </span>
+        <h1 className="mt-3 font-serif text-[34px] leading-[1.05] text-teal sm:text-[44px]">
+          {product.name}
+        </h1>
+        <p className="mt-4 text-[13px] tracking-[0.16em] uppercase text-teal">
+          Coming Soon
+        </p>
+        <p className="mt-[22px] text-base leading-[1.7] font-light text-stone-deep">
+          {product.blurb}
+        </p>
+        <EmailSignupForm source="weekender-tote" className="mt-8 max-w-[400px]" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-[460px]">
@@ -159,6 +182,11 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
       ) : selectedStatus === "low" ? (
         <p className="mt-3 text-[13px] text-clay">Only {selectedStock} left.</p>
       ) : null}
+
+      <p className="mt-3 text-[13px] leading-[1.6] font-light text-stone">
+        Wear-it-in guarantee — if it doesn&apos;t move the way you do, send it
+        back.
+      </p>
 
       {/* details */}
       <div className="mt-[38px] border-t border-line">

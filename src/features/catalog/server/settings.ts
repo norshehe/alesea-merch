@@ -24,11 +24,9 @@ export const SETTINGS_FALLBACK: ISiteSettings = {
   contactEmail: "hello@alesea.co",
   contactAddress: "BGC, Taguig, PH",
   contactSocial: "Instagram · Facebook",
-  navLinks: [
-    { label: "Shop", href: "/" },
-    { label: "Villas & Suites", href: "https://www.alesea.co/villas---suites" },
-    { label: "About", href: "https://www.alesea.co/about-alesea" },
-  ],
+  // Header nav intentionally empty — the storefront links back to alesea.co via
+  // the "Back to Alesea" strip instead of surfacing the main-site nav here.
+  navLinks: [],
   bookNowLabel: "Book Now",
   bookNowUrl: "https://book.alesea.co/all-listings",
   socialLinks: [
