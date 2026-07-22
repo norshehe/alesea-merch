@@ -1,11 +1,13 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart.store";
 import { NavLink } from "@/components/layout/nav-link";
 import type { INavLink } from "@/lib/contentful/siteSettings/siteSettingsClient";
+import type { IImage } from "@/lib/contentful/types/common";
 
 const NAV_LINK =
   "text-[11.5px] tracking-[0.18em] uppercase transition-colors";
@@ -13,12 +15,14 @@ const NAV_LINK =
 const noop = () => () => {};
 
 interface ISiteHeaderProps {
+  logo?: IImage | null;
   navLinks: INavLink[];
   bookNowLabel: string;
   bookNowUrl: string;
 }
 
 export function SiteHeader({
+  logo,
   navLinks,
   bookNowLabel,
   bookNowUrl,
@@ -63,12 +67,26 @@ export function SiteHeader({
         className="flex flex-col items-center leading-none"
         aria-label="Alesea Lifestyle, home"
       >
-        <span className="font-serif text-[25px] tracking-[0.42em] [text-indent:0.42em] text-teal">
-          ALESEA
-        </span>
-        <span className="mt-[5px] text-[8.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-teal">
-          Lifestyle
-        </span>
+        {logo?.width ? (
+          <Image
+            src={logo.url}
+            alt="Alesea Lifestyle"
+            width={logo.width}
+            height={logo.height}
+            priority
+            sizes="120px"
+            className="block h-8 w-auto"
+          />
+        ) : (
+          <>
+            <span className="font-serif text-[25px] tracking-[0.42em] [text-indent:0.42em] text-teal">
+              ALESEA
+            </span>
+            <span className="mt-[5px] text-[8.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-teal">
+              Lifestyle
+            </span>
+          </>
+        )}
       </Link>
 
       <div className="flex flex-1 items-center justify-end gap-4 sm:gap-[26px]">

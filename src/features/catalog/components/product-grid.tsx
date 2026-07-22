@@ -25,7 +25,7 @@ export function ProductGrid({ products, stock }: IProductGridProps) {
           <p className="font-serif text-[22px] text-teal">
             Nothing in the collection yet.
           </p>
-          <p className="mt-2 text-sm font-light text-stone">
+          <p className="mt-2 text-sm font-normal text-stone">
             Check back soon.
           </p>
         </div>

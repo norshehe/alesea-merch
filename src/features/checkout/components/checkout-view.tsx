@@ -172,7 +172,7 @@ export function CheckoutView() {
             <Check className="size-7 text-white" strokeWidth={1.6} />
           </span>
           <h1 className="font-serif text-[38px] text-teal">Order confirmed</h1>
-          <p className="mt-3.5 text-[15px] leading-[1.7] font-light text-stone-deep">
+          <p className="mt-3.5 text-[15px] leading-[1.7] font-normal text-stone-deep">
             Thank you, {placed.name}. A confirmation is on its way to{" "}
             {placed.email}. Your coastal goods ship from La Union within 3–5
             days.
@@ -199,7 +199,7 @@ export function CheckoutView() {
           <p className="font-serif text-[26px] text-teal">
             Your bag is empty.
           </p>
-          <p className="mt-2.5 text-[15px] font-light text-stone">
+          <p className="mt-2.5 text-[15px] font-normal text-stone">
             Add a few coastal goods before checking out.
           </p>
           <Link
@@ -327,7 +327,7 @@ export function CheckoutView() {
                         <span className="text-[14.5px] text-ink">
                           {option.label}
                         </span>
-                        <span className="text-[12.5px] font-light text-clay">
+                        <span className="text-[12.5px] font-normal text-clay">
                           {option.note}
                         </span>
                       </span>
@@ -350,7 +350,7 @@ export function CheckoutView() {
               ? "Placing order…"
               : `Place order — ${formatPrice(total, currency)}`}
           </button>
-          <p className="mt-3.5 text-center text-xs font-light text-clay">
+          <p className="mt-3.5 text-center text-xs font-normal text-clay">
             Orders are arranged for cash on delivery — no online payment is
             taken.
           </p>

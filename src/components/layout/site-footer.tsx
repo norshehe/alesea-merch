@@ -4,7 +4,7 @@ import { WEEKENDER_TOTE_SLUG } from "@/features/catalog/constants/products";
 import type { ISiteSettings } from "@/lib/contentful/siteSettings/siteSettingsClient";
 
 const ALESEA_LINK =
-  "text-left text-sm font-light text-[#D9CEBC] transition-colors hover:text-white";
+  "text-left text-sm font-normal text-[#D9CEBC] transition-colors hover:text-white";
 const SHOP_LINK =
   "text-left text-sm text-[#D9CEBC] transition-colors hover:text-white";
 const COL_HEADING =
@@ -30,7 +30,7 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
               Lifestyle
             </span>
           </span>
-          <p className="mt-[18px] max-w-[280px] text-sm leading-[1.7] font-light text-[#A99E8B]">
+          <p className="mt-[18px] max-w-[280px] text-sm leading-[1.7] font-normal text-[#A99E8B]">
             {settings.footerBlurb}
           </p>
           <Link
@@ -100,14 +100,14 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
               ))}
             </div>
           ) : (
-            <span className="text-sm font-light text-[#D9CEBC]">
+            <span className="text-sm font-normal text-[#D9CEBC]">
               {settings.contactSocial}
             </span>
           )}
         </div>
       </div>
 
-      <div className="pt-6 text-xs font-light text-[#8B8170]">
+      <div className="pt-6 text-xs font-normal text-[#8B8170]">
         <span>
           © 2026 Alesea Collection. All rights reserved. Coastal goods, shipped
           from the Philippines.

@@ -37,7 +37,7 @@ export function CarryFeature({ content }: ICarryFeatureProps) {
           <h2 className="mt-3.5 font-serif text-[36px] leading-[1.05] text-teal sm:text-[44px]">
             {content.carryHeading}
           </h2>
-          <p className="mt-[22px] text-base leading-[1.7] font-light text-stone-deep">
+          <p className="mt-[22px] text-base leading-[1.7] font-normal text-stone-deep">
             {content.carryBody}
           </p>
           {/* Tote teaser: capture emails for the coming-soon Weekender Tote. */}

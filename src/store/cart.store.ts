@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { CatalogCategory, ICatalogProduct } from "@/features/catalog/types";
+import type {
+  CatalogCategory,
+  ICatalogProduct,
+  IProductColor,
+} from "@/features/catalog/types";
 
 export interface ICartLine {
   /** Unique per variant: `${id}|${color}|${size}`. */
@@ -15,6 +19,13 @@ export interface ICartLine {
   size: string;
   category: CatalogCategory;
   quantity: number;
+  /**
+   * Denormalized snapshot of the product's variant options at add-time, so the
+   * cart can offer inline variant switching without a live product fetch.
+   * Older persisted lines predate these fields — treat as possibly undefined.
+   */
+  colors: IProductColor[];
+  sizes: string[];
 }
 
 function lineKey(id: string, color: string, size: string): string {
@@ -33,6 +44,11 @@ interface CartState {
   ) => void;
   changeQuantity: (key: string, delta: number) => void;
   setQuantity: (key: string, quantity: number) => void;
+  /**
+   * Switch a line's variant. If the new variant matches another existing line,
+   * merge their quantities into one; otherwise re-key the line in place.
+   */
+  changeVariant: (key: string, color: string, size: string) => void;
   remove: (key: string) => void;
   clear: () => void;
   openCart: () => void;
@@ -79,6 +95,8 @@ export const useCartStore = create<CartState>()(
                 size,
                 category: product.category,
                 quantity,
+                colors: product.colors,
+                sizes: product.sizes,
               },
             ],
           };
@@ -100,6 +118,32 @@ export const useCartStore = create<CartState>()(
                   l.key === key ? { ...l, quantity } : l,
                 ),
         })),
+      changeVariant: (key, color, size) =>
+        set((state) => {
+          const line = state.lines.find((l) => l.key === key);
+          if (!line) return state;
+          const newKey = lineKey(line.id, color, size);
+          if (newKey === key) return state;
+          const target = state.lines.find((l) => l.key === newKey);
+          if (target) {
+            // Merge into the existing variant, then drop the original line.
+            return {
+              lines: state.lines
+                .map((l) =>
+                  l.key === newKey
+                    ? { ...l, quantity: l.quantity + line.quantity }
+                    : l,
+                )
+                .filter((l) => l.key !== key),
+            };
+          }
+          // Re-key the line in place, preserving its position.
+          return {
+            lines: state.lines.map((l) =>
+              l.key === key ? { ...l, color, size, key: newKey } : l,
+            ),
+          };
+        }),
       remove: (key) =>
         set((state) => ({ lines: state.lines.filter((l) => l.key !== key) })),
       clear: () => set({ lines: [] }),

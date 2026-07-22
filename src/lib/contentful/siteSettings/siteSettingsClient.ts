@@ -1,4 +1,6 @@
 import { contentful } from "@/lib/contentful";
+import { toImage } from "@/lib/contentful/types/common";
+import type { IImage } from "@/lib/contentful/types/common";
 import type {
   INavLinkField,
   SiteSettingsSkeleton,
@@ -12,6 +14,7 @@ export interface INavLink {
 
 /** Normalized site settings consumed by the layout, header and footer. */
 export interface ISiteSettings {
+  logo: IImage | null;
   currency: string;
   freeShipThreshold: number;
   standardShipping: number;
@@ -50,6 +53,7 @@ export async function getSiteSettingsFromContentful(): Promise<ISiteSettings | n
   if (!entry) return null;
   const f = entry.fields;
   return {
+    logo: toImage(f.logo),
     currency: f.currency ?? "PHP",
     freeShipThreshold:
       typeof f.freeShipThreshold === "number" ? f.freeShipThreshold : 0,
