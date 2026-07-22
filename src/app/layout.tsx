@@ -54,6 +54,7 @@ export default async function RootLayout({
             }}
           >
             <SiteHeader
+              logo={settings.logo}
               navLinks={settings.navLinks}
               bookNowLabel={settings.bookNowLabel}
               bookNowUrl={settings.bookNowUrl}

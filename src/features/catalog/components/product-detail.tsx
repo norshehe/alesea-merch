@@ -9,6 +9,7 @@ import { EmailSignupForm } from "@/features/catalog/components/email-signup-form
 import type { ICatalogProduct } from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
 import { stockStatus, variantKey } from "@/features/catalog/lib/stock";
+import { sizePillClass } from "@/features/catalog/lib/size-pill";
 
 interface IProductDetailProps {
   product: ICatalogProduct;
@@ -56,7 +57,7 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
         <p className="mt-4 text-[13px] tracking-[0.16em] uppercase text-teal">
           Coming Soon
         </p>
-        <p className="mt-[22px] text-base leading-[1.7] font-light text-stone-deep">
+        <p className="mt-[22px] text-base leading-[1.7] font-normal text-stone-deep">
           {product.blurb}
         </p>
         <EmailSignupForm source="weekender-tote" className="mt-8 max-w-[400px]" />
@@ -75,7 +76,7 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
       <p className="mt-4 text-[22px] text-[#5A5247]">
         {formatPrice(product.price, product.currency)}
       </p>
-      <p className="mt-[22px] text-base leading-[1.7] font-light text-stone-deep">
+      <p className="mt-[22px] text-base leading-[1.7] font-normal text-stone-deep">
         {product.blurb}
       </p>
 
@@ -128,11 +129,7 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
                 aria-disabled={sizeOut}
                 title={sizeOut ? `${s} — out of stock` : undefined}
                 onClick={() => setSize(s)}
-                className={`min-w-[52px] cursor-pointer border px-4 py-3 text-[13px] tracking-[0.04em] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal ${
-                  on
-                    ? "border-teal bg-teal text-white"
-                    : "border-line-deep bg-transparent text-[#5A5247] hover:border-teal"
-                } ${sizeOut ? "line-through opacity-40" : ""}`}
+                className={sizePillClass({ selected: on, out: sizeOut })}
               >
                 {s}
               </button>
@@ -183,7 +180,7 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
         <p className="mt-3 text-[13px] text-clay">Only {selectedStock} left.</p>
       ) : null}
 
-      <p className="mt-3 text-[13px] leading-[1.6] font-light text-stone">
+      <p className="mt-3 text-[13px] leading-[1.6] font-normal text-stone">
         Wear-it-in guarantee — if it doesn&apos;t move the way you do, send it
         back.
       </p>
@@ -194,7 +191,7 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
           <span className="flex-[0_0_120px] text-[11px] tracking-[0.16em] uppercase text-clay">
             Materials
           </span>
-          <span className="text-[14.5px] leading-[1.6] font-light text-stone-deep">
+          <span className="text-[14.5px] leading-[1.6] font-normal text-stone-deep">
             {product.materials}
           </span>
         </div>
@@ -202,8 +199,9 @@ export function ProductDetail({ product, stock = {} }: IProductDetailProps) {
           <span className="flex-[0_0_120px] text-[11px] tracking-[0.16em] uppercase text-clay">
             Shipping
           </span>
-          <span className="text-[14.5px] leading-[1.6] font-light text-stone-deep">
-            Ships from Metro Manila in 3–5 days. Free over{" "}
+          <span className="text-[14.5px] leading-[1.6] font-normal text-stone-deep">
+            Pick up in La Union during your stay, or have it shipped from Metro
+            Manila in 2–4 days. Free shipping over{" "}
             {formatPrice(freeShipThreshold, currency)}.
           </span>
         </div>

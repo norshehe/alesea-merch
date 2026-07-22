@@ -5,6 +5,7 @@ import { useCartStore } from "@/store/cart.store";
 import { useSettings } from "@/app/providers/settings-provider";
 import { formatPrice } from "@/lib/format";
 import { freeShipHint, standardShipping } from "@/features/cart/lib/shipping";
+import { CartLineVariants } from "@/features/cart/components/cart-line-variants";
 
 const QTY_BTN =
   "flex h-10 w-[38px] items-center justify-center text-[17px] text-stone transition-colors hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal";
@@ -36,7 +37,7 @@ export function CartView() {
       {isEmpty ? (
         <div className="border-t border-line py-20 text-center">
           <p className="font-serif text-[26px] text-teal">Your bag is empty.</p>
-          <p className="mt-2.5 text-[15px] font-light text-stone">
+          <p className="mt-2.5 text-[15px] font-normal text-stone">
             Nothing packed for the coast just yet.
           </p>
           <Link
@@ -67,9 +68,7 @@ export function CartView() {
                       {formatPrice(line.price * line.quantity, line.currency)}
                     </span>
                   </div>
-                  <span className="mt-[5px] text-[12.5px] tracking-[0.08em] uppercase text-clay">
-                    {line.color} · {line.size}
-                  </span>
+                  <CartLineVariants line={line} />
                   <div className="mt-auto flex items-center justify-between pt-4">
                     <div className="flex items-center border border-line-deep">
                       <button
@@ -129,7 +128,7 @@ export function CartView() {
             >
               Checkout
             </Link>
-            <p className="mt-3.5 text-center text-xs font-light text-clay">
+            <p className="mt-3.5 text-center text-xs font-normal text-clay">
               {freeShipHint(subtotal, freeShipThreshold, currency)}
             </p>
           </div>

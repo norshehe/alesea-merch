@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -8,6 +9,7 @@ import { useCartStore } from "@/store/cart.store";
 import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
 import type { ICatalogProduct } from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
+import { sizePillClass } from "@/features/catalog/lib/size-pill";
 import { EmailSignupForm } from "@/features/catalog/components/email-signup-form";
 
 interface IProductCardProps {
@@ -40,12 +42,12 @@ function CardCover({ product }: { product: ICatalogProduct }) {
 }
 
 export function ProductCard({ product, soldOut = false }: IProductCardProps) {
-  const add = useCartStore((s) => s.add);
-
   // Coming-soon products have no price / add-to-bag. Per the client brief the
   // card carries an inline email input + "Notify Me" button. The card itself is
   // NOT a full-card <Link> (a form can't be nested in an <a>); the image and
-  // name link to the PDP, the signup form sits below.
+  // name link to the PDP, the signup form sits below. Split into a separate
+  // component so the quick-add hooks only run on the purchasable branch (Rules
+  // of Hooks — no conditional hook calls).
   if (product.comingSoon) {
     return (
       <div className="flex flex-col">
@@ -71,6 +73,9 @@ export function ProductCard({ product, soldOut = false }: IProductCardProps) {
           >
             {product.name}
           </Link>
+          <p className="line-clamp-2 min-h-[42px] text-[13px] leading-[1.6] font-normal text-stone-deep">
+            {product.blurb}
+          </p>
           <EmailSignupForm
             source="weekender-tote"
             variant="stacked"
@@ -81,12 +86,63 @@ export function ProductCard({ product, soldOut = false }: IProductCardProps) {
     );
   }
 
+  return <ActiveProductCard product={product} soldOut={soldOut} />;
+}
+
+/** Purchasable card: quick-add "+" with an inline size picker for multi-size products. */
+function ActiveProductCard({
+  product,
+  soldOut,
+}: {
+  product: ICatalogProduct;
+  soldOut: boolean;
+}) {
+  const add = useCartStore((s) => s.add);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const imageRef = useRef<HTMLDivElement>(null);
+  const multiSize = product.sizes.length > 1;
+
+  // Dismiss the size picker on Escape or an outside click (in addition to
+  // re-clicking the trigger or selecting a size).
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickerOpen(false);
+    };
+    const onPointer = (e: PointerEvent) => {
+      if (imageRef.current && !imageRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [pickerOpen]);
+
+  const addToBag = (size: string) => {
+    add(product, product.colors[0]?.name ?? "", size, 1);
+    toast("Added to bag");
+    setPickerOpen(false);
+  };
+
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (soldOut) return;
-    add(product, product.colors[0]?.name ?? "", product.sizes[0] ?? "", 1);
-    toast("Added to bag");
+    // Single-size products add in one click; otherwise reveal the size picker.
+    if (multiSize) {
+      setPickerOpen((open) => !open);
+      return;
+    }
+    addToBag(product.sizes[0] ?? "");
+  };
+
+  const stop = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   return (
@@ -94,7 +150,7 @@ export function ProductCard({ product, soldOut = false }: IProductCardProps) {
       href={`/products/${product.slug}`}
       className="group flex flex-col rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal"
     >
-      <div className="dc-stripe relative aspect-4/5 overflow-hidden">
+      <div ref={imageRef} className="dc-stripe relative aspect-4/5 overflow-hidden">
         <CardCover product={product} />
         {soldOut ? (
           <span className="absolute top-3 left-3 bg-ink/85 px-2.5 py-1 text-[9.5px] tracking-[0.16em] uppercase text-white">
@@ -106,16 +162,49 @@ export function ProductCard({ product, soldOut = false }: IProductCardProps) {
           onClick={handleQuickAdd}
           disabled={soldOut}
           aria-disabled={soldOut}
+          aria-expanded={multiSize && !soldOut ? pickerOpen : undefined}
           aria-label={
             soldOut
               ? `${product.name} is sold out`
-              : `Quick add ${product.name} to bag`
+              : multiSize
+                ? pickerOpen
+                  ? `Close size picker for ${product.name}`
+                  : `Choose a size for ${product.name}`
+                : `Quick add ${product.name} to bag`
           }
-          title={soldOut ? "Sold out" : "Quick add"}
-          className="absolute right-3 bottom-3 flex size-11 items-center justify-center rounded-full bg-foam text-ink shadow-[0_4px_14px_rgba(42,38,32,0.16)] transition-colors hover:bg-teal hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:bg-foam disabled:text-ink/40 disabled:shadow-none disabled:hover:bg-foam disabled:hover:text-ink/40"
+          title={soldOut ? "Sold out" : multiSize ? "Choose a size" : "Quick add"}
+          className={`absolute right-3 bottom-3 z-20 flex size-11 items-center justify-center rounded-full bg-foam text-ink shadow-[0_4px_14px_rgba(42,38,32,0.16)] transition-colors hover:bg-teal hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:bg-foam disabled:text-ink/40 disabled:shadow-none disabled:hover:bg-foam disabled:hover:text-ink/40 ${
+            pickerOpen ? "bg-teal text-white" : ""
+          }`}
         >
-          <Plus className="size-[18px]" strokeWidth={1.6} />
+          <Plus
+            className={`size-[18px] transition-transform ${pickerOpen ? "rotate-45" : ""}`}
+            strokeWidth={1.6}
+          />
         </button>
+
+        {pickerOpen && !soldOut ? (
+          // Anchored above the trigger (bottom-14) so the "×" stays clickable.
+          <div
+            onClick={stop}
+            className="absolute inset-x-0 bottom-14 z-10 flex flex-wrap items-center justify-center gap-2 bg-cream/95 px-3 py-3.5 shadow-[0_-4px_14px_rgba(42,38,32,0.12)]"
+          >
+            {product.sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={(e) => {
+                  stop(e);
+                  addToBag(s);
+                }}
+                aria-label={`Add ${product.name}, size ${s}, to bag`}
+                className={sizePillClass()}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-[7px] pt-4">

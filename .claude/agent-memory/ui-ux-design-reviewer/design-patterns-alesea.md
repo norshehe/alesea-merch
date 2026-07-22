@@ -102,6 +102,23 @@ Every form in the app (`checkout-view.tsx`, the new `email-signup-form.tsx`) use
 
 `product-card.tsx`'s `product.comingSoon` branch renders a materially different card anatomy — adds a blurb paragraph and a full `EmailSignupForm` (input + button) inside the grid tile — while sibling cards in the same `ProductGrid` are just image/category/name/price/swatches. This taller card stretches the shared grid row and reads as visually inconsistent. Prefer keeping the *grid* tile minimal (name + "Notify me" link to the PDP) and reserving the full email-capture form for the product detail page, which already has its own `comingSoon` branch in `product-detail.tsx`.
 
+## Coming-soon blurb color token drift + reinforces existing grid-uniformity note
+
+`product.blurb` now also renders on the coming-soon *card* (not just the PDP), but with `text-stone` — the PDP's same field uses `text-stone-deep` (`product-detail.tsx:59-61`). Same semantic content field, two different muted tokens across surfaces; normalize. This adds to the existing [[design-patterns-alesea]] note above about coming-soon cards breaking grid uniformity — the blurb addition makes that ragged-row problem worse, not better.
+
+## Quick-add size-picker overlay (product-card.tsx) — z-index collision pattern to watch for
+
+When a card's quick-add "+" button opens an inline overlay/panel anchored to the same `relative` image container (`absolute inset-x-0 bottom-0 ...`), check the geometry against the trigger button's own `absolute right-3 bottom-3 size-11` box. Neither had an explicit `z-index` in the reviewed instance, so the later-DOM overlay painted over the trigger once opened, making the "close" affordance (re-clicking "+") invisible/unclickable. Rule of thumb for this codebase: any disclosure panel anchored inside the same positioned container as its trigger button needs an explicit `z-10`+ on the trigger (or the panel must not geometrically overlap the trigger's box) — verify with real dimensions, not just class names.
+
+## Two size-pill treatments now exist — should share one component
+
+PDP canonical size pill (`product-detail.tsx:118-141`): `min-w-[52px] px-4 py-3 text-[13px]`, with selected (`border-teal bg-teal text-white`) and out-of-stock (`line-through opacity-40`) states.
+Product-card quick-add pill (`product-card.tsx:167-180`, new): `min-w-[38px] px-3 py-2 text-[12px]`, no selected state — smaller and under the 44px tap-target floor. These should be one shared `SizePill` component/class string, not two hand-maintained copies that drift in size.
+
+## Native `<select>` used for cart line variant editing instead of Shadcn `Select`
+
+`src/features/cart/components/cart-line-variants.tsx` (new) hand-styles a raw `<select>` to look like the coastal-minimal button treatment, but `src/components/ui/select.tsx` (Radix Shadcn Select) exists in the repo and is otherwise **unused anywhere in `src/features/**`** — so this is the first real "should we use Select" decision point in the codebase. Native `<option>` popups can't be restyled (breaks uppercase/tracking aesthetic the moment it opens). Recommend migrating to `Select`/`SelectTrigger`/`SelectContent` here and treating it as the precedent for future dropdowns, rather than letting native-select-with-custom-trigger become the pattern.
+
 ## CMS fields going hardcoded / orphaned (content-boundary regressions)
 
 Watch for components hardcoding copy/data that a Contentful-backed settings/content type still fetches — this silently breaks CMS editability:

@@ -7,6 +7,7 @@ import { useCartStore } from "@/store/cart.store";
 import { useSettings } from "@/app/providers/settings-provider";
 import { formatPrice } from "@/lib/format";
 import { freeShipHint } from "@/features/cart/lib/shipping";
+import { CartLineVariants } from "@/features/cart/components/cart-line-variants";
 
 const QTY_BTN =
   "flex h-8 w-[30px] items-center justify-center text-[15px] text-stone transition-colors hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-teal";
@@ -95,9 +96,7 @@ export function CartDrawer() {
                         {formatPrice(line.price * line.quantity, line.currency)}
                       </span>
                     </div>
-                    <span className="mt-1 text-[11px] tracking-[0.08em] uppercase text-clay">
-                      {line.color} · {line.size}
-                    </span>
+                    <CartLineVariants line={line} compact />
                     <div className="mt-auto flex items-center justify-between pt-3">
                       <div className="flex items-center border border-line-deep">
                         <button
@@ -140,7 +139,7 @@ export function CartDrawer() {
                   {formatPrice(subtotal, currency)}
                 </span>
               </div>
-              <p className="mb-4 text-[11.5px] font-light text-clay">
+              <p className="mb-4 text-[11.5px] font-normal text-clay">
                 {freeShipHint(subtotal, freeShipThreshold, currency)}
               </p>
               <Link

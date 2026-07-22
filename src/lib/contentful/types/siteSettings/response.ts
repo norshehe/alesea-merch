@@ -16,6 +16,7 @@ export interface SiteSettingsSkeleton {
   contentTypeId: "siteSettings";
   fields: {
     title: EntryFieldTypes.Symbol;
+    logo: EntryFieldTypes.AssetLink;
     currency: EntryFieldTypes.Symbol;
     freeShipThreshold: EntryFieldTypes.Integer;
     standardShipping: EntryFieldTypes.Integer;

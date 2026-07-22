@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import type { IHomeContent } from "@/features/catalog/server/home";
 
 interface IHeroProps {
@@ -35,16 +34,19 @@ export function Hero({ content }: IHeroProps) {
         <h1 className="max-w-[780px] font-serif text-[44px] leading-[0.98] text-balance text-foam sm:text-[64px] lg:text-[84px]">
           {content.heroHeading}
         </h1>
-        <p className="mt-6 max-w-[430px] text-[17px] leading-relaxed font-light text-[#EDE6D8]">
+        <p className="mt-6 max-w-[430px] text-[17px] leading-relaxed font-normal text-[#EDE6D8]">
           {content.heroBody}
         </p>
         <div className="mt-[34px] flex flex-wrap gap-3.5">
-          <Link
-            href="/#shop-grid"
+          {/* Native anchor (not next/link): the shop grid lives on this same
+              page, and App Router <Link> skips re-scrolling when the URL hash
+              is already #shop-grid. A plain <a> always jumps to the anchor. */}
+          <a
+            href="#shop-grid"
             className="rounded-full border border-teal bg-teal px-8 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foam"
           >
             {content.heroPrimaryCta}
-          </Link>
+          </a>
         </div>
       </div>
     </section>

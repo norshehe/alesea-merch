@@ -51,7 +51,7 @@ export function Assurances({ content }: IAssurancesProps) {
             <span className="text-base font-medium text-[#EBE1CC]">
               {item.title}
             </span>
-            <p className="text-sm leading-[1.65] font-light text-sage">
+            <p className="text-sm leading-[1.65] font-normal text-sage">
               {item.body}
             </p>
           </div>

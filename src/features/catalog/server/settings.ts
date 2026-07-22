@@ -14,6 +14,7 @@ import {
  * identically to before the data-source swap.
  */
 export const SETTINGS_FALLBACK: ISiteSettings = {
+  logo: null,
   currency: "PHP",
   freeShipThreshold: FREE_SHIP_THRESHOLD,
   standardShipping: SHIPPING.standard,
@@ -62,6 +63,7 @@ export async function getSiteSettings(): Promise<ISiteSettings> {
   if (!remote) return SETTINGS_FALLBACK;
 
   return {
+    logo: remote.logo ?? SETTINGS_FALLBACK.logo,
     currency: str(remote.currency, SETTINGS_FALLBACK.currency),
     freeShipThreshold: num(
       remote.freeShipThreshold,

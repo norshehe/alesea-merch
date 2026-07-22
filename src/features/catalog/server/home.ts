@@ -54,7 +54,7 @@ const HOME_FALLBACK: IHomeContent = {
     "https://lirp.cdn-website.com/a93d3aad/dms3rep/multi/opt/Bath+Amenities-909h.jpg",
   editorialCta: "Shop everything",
   carryEyebrow: "Alesea Carry",
-  carryHeading: "Everything but the tide.",
+  carryHeading: "Your beach day, fully packed.",
   carryBody:
     "From market runs to island hops, the Carry line holds the whole day. Water-resistant canvas, wipe-clean linings, and straps built for the boat — so you can pack light and stay long.",
   carryImage: null,
