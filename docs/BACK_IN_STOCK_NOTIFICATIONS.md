@@ -68,7 +68,8 @@ counts, then set `BACK_IN_STOCK_SEND=true` to go live.
 
 ## Schedule
 
-`vercel.json` runs it every 15 minutes. Vercel Cron sends
+`vercel.json` runs it once daily at 09:00 UTC (Vercel Hobby allows only daily
+crons; on Pro, tighten to e.g. `*/15 * * * *`). Vercel Cron sends
 `Authorization: Bearer $CRON_SECRET`; the same header works for a manual run.
 
 ## Failure behaviour
