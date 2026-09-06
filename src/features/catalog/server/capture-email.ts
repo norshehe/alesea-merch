@@ -2,7 +2,10 @@
 
 import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import { createSignup } from "@/lib/supabase/signup/signupClient";
-import { emailSignupSchema } from "@/features/catalog/schemas/email-signup.schema";
+import {
+  emailSignupSchema,
+  signupSourceSchema,
+} from "@/features/catalog/schemas/email-signup.schema";
 
 export interface ICaptureEmailInput {
   email: string;
@@ -28,13 +31,22 @@ export async function captureEmail(
     return { ok: false, error: "Enter a valid email." };
   }
 
+  // `source` is set by our own forms, never typed by a customer — so anything
+  // that fails this is a hand-crafted request, and it is the field that decides
+  // both dedup and which restock blast the row joins. See signupSourceSchema.
+  const source = signupSourceSchema.safeParse(input.source);
+  if (!source.success) {
+    console.warn("[signups] Rejected signup with an invalid source");
+    return { ok: false, error: "We couldn't save your email. Please try again." };
+  }
+
   if (!isSupabaseAdminConfigured()) {
     console.warn("[signups] Supabase not configured — email not persisted");
     return { ok: true };
   }
 
   try {
-    await createSignup({ email: parsed.data.email, source: input.source });
+    await createSignup({ email: parsed.data.email, source: source.data });
     return { ok: true };
   } catch (error) {
     console.error("[signups] Failed to persist email to Supabase:", error);

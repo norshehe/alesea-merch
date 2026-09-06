@@ -237,9 +237,7 @@ export async function getAdminOrder(id: string): Promise<IAdminOrder | null> {
 }
 
 /**
- * Counts for the filter chips. One flat read tallied in memory rather than
- * seven `head: true` counts: this table is small and seven round trips to
- * render a row of chips is the worse trade.
+ * Counts for the filter chips — one exact count per chip.
  */
 export async function countOrdersByStatus(): Promise<IOrderStatusCounts> {
   const supabase = await createSupabaseServerClient();
@@ -248,16 +246,32 @@ export async function countOrdersByStatus(): Promise<IOrderStatusCounts> {
     ORDER_STATUSES.map((status) => [status, 0]),
   ) as Record<OrderStatus, number>;
 
-  const { data, error } = await supabase.from("orders").select("status");
+  // ⚠️ `head: true` counts, NOT "select every row and tally in JS". PostgREST
+  // caps an unbounded select at 1000 rows and truncates SILENTLY, so the old
+  // tally quietly stopped counting past the thousandth order — and a wrong
+  // chip count reads as real data. One extra round trip per status buys a
+  // number that stays true.
+  const [total, ...perStatus] = await Promise.all([
+    supabase.from("orders").select("id", { count: "exact", head: true }),
+    ...ORDER_STATUSES.map((status) =>
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status),
+    ),
+  ]);
 
-  if (error) {
+  const failed = [total, ...perStatus].find((result) => result.error);
+  if (failed?.error) {
     // Chips are navigation, not data. A failure here must not take down the
     // table they sit above — they just render as zeroes.
-    console.error("[admin-orders] status counts failed", error);
+    console.error("[admin-orders] status counts failed", failed.error);
     return { total: 0, byStatus };
   }
 
-  for (const row of data ?? []) byStatus[row.status] += 1;
+  ORDER_STATUSES.forEach((status, index) => {
+    byStatus[status] = perStatus[index].count ?? 0;
+  });
 
-  return { total: (data ?? []).length, byStatus };
+  return { total: total.count ?? 0, byStatus };
 }

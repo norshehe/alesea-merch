@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Controller, useForm } from "react-hook-form";
@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SubmitButton } from "@/features/admin/components/submit-button";
+import { useUnsavedChangesGuard } from "@/features/admin/hooks/use-unsaved-changes-guard";
 import {
   deleteOrphanRow,
   saveInventory,
@@ -149,14 +150,8 @@ export function InventoryGrid({
   }, [dirty]);
 
   // A grid save is a deliberate act; losing it to a stray tab close is not.
-  useEffect(() => {
-    if (!hasChanges) return;
-    function onBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-    }
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [hasChanges]);
+  // This pattern started here and now covers every admin form.
+  useUnsavedChangesGuard(hasChanges);
 
   function setCell(key: string, text: string) {
     setDirty((previous) => {
@@ -277,6 +272,12 @@ export function InventoryGrid({
           </div>
         </div>
 
+        {/* A hand-rolled <table> rather than the shared `Table` primitives,
+            which every other admin table uses. Deliberate: these cells hold
+            live <Input> controls with per-cell validation and colour-coded
+            borders, not text, so the primitives' padding and hover styling
+            fight the grid instead of helping it. The row headers are real
+            <th scope="row"> elements, so the semantics are not the trade. */}
         <div className="overflow-x-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead>

@@ -19,12 +19,21 @@ import type { IImage } from "@/lib/supabase/types/common";
 const NAV_LINK =
   "relative px-5 py-1 text-[14px] tracking-[0.04em] uppercase text-[#14201b] transition-[font-weight,color] hover:font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal after:absolute after:inset-x-5 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-current after:transition-transform hover:after:scale-x-100";
 
+/**
+ * Intrinsic size used when `site_settings` has a logo URL but no dimensions
+ * (`logo_width` / `logo_height` default to 0). `next/image` requires both, and
+ * the rendered size is fixed by `h-8 w-auto` anyway — these only set the
+ * pre-load aspect ratio. Dropping the image instead would silently swap an
+ * admin's uploaded logo for the text wordmark with no explanation.
+ */
+const LOGO_FALLBACK = { width: 120, height: 32 } as const;
+
 const noop = () => () => {};
 
 interface ISiteHeaderProps {
   logo?: IImage | null;
   /**
-   * Storefront-specific links from Contentful, appended after the mirrored
+   * Storefront-specific links from `site_settings`, appended after the mirrored
    * alesea.co items. Empty by default — the main nav lives in `MAIN_NAV`.
    */
   navLinks: INavLink[];
@@ -64,12 +73,12 @@ export function SiteHeader({
         className="flex shrink-0 flex-col leading-none"
         aria-label="Alesea Lifestyle, shop home"
       >
-        {logo?.width ? (
+        {logo ? (
           <Image
             src={logo.url}
             alt="Alesea Lifestyle"
-            width={logo.width}
-            height={logo.height}
+            width={logo.width || LOGO_FALLBACK.width}
+            height={logo.height || LOGO_FALLBACK.height}
             priority
             sizes="120px"
             className="block h-8 w-auto"

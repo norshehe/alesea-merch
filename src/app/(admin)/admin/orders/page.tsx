@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/features/admin/components/empty-state";
 import { PageHeader } from "@/features/admin/components/page-header";
-import { OrderSearch } from "@/features/admin/orders/components/order-search";
+import {
+  FilterChip,
+  PagerLink,
+} from "@/features/admin/components/list-controls";
+import { ListSearch } from "@/features/admin/components/list-search";
 import { OrderStatusBadge } from "@/features/admin/orders/components/order-status-badge";
 import { ORDER_STATUS_LABELS } from "@/features/admin/orders/lib/order-status";
 import {
@@ -48,57 +52,6 @@ function ordersHref(params: {
   if (params.page && params.page > 1) search.set("page", String(params.page));
   const query = search.toString();
   return query ? `/admin/orders?${query}` : "/admin/orders";
-}
-
-function FilterChip({
-  href,
-  label,
-  count,
-  active,
-}: {
-  href: string;
-  label: string;
-  count: number;
-  active: boolean;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant={active ? "secondary" : "ghost"}
-      aria-current={active ? "page" : undefined}
-      render={<Link href={href} />}
-    >
-      {label}
-      <span className="text-muted-foreground tabular-nums">{count}</span>
-    </Button>
-  );
-}
-
-/**
- * A disabled anchor is still clickable, so the boundary case renders a real
- * disabled <button> instead of a Link that goes nowhere.
- */
-function PagerLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string;
-  disabled: boolean;
-  children: React.ReactNode;
-}) {
-  if (disabled) {
-    return (
-      <Button variant="outline" size="sm" disabled>
-        {children}
-      </Button>
-    );
-  }
-  return (
-    <Button variant="outline" size="sm" render={<Link href={href} />}>
-      {children}
-    </Button>
-  );
 }
 
 export default async function AdminOrdersPage({
@@ -155,7 +108,13 @@ export default async function AdminOrdersPage({
             />
           ))}
         </div>
-        <OrderSearch q={query} status={status} />
+        <ListSearch
+          basePath="/admin/orders"
+          q={query}
+          preserve={{ status }}
+          placeholder="Reference or email"
+          label="Search orders by reference or email"
+        />
       </div>
 
       {/* Two different nothings: an empty shop, and a filter that matched

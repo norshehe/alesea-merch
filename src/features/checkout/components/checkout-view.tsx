@@ -76,8 +76,6 @@ export function CheckoutView() {
     expressShipping: expressRate,
   } = useSettings();
 
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [promo, setPromo] = useState("");
   const [placed, setPlaced] = useState<IPlacedOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -99,22 +97,17 @@ export function CheckoutView() {
     return subtotal >= freeShipThreshold ? 0 : standardRate;
   }, [delivery, subtotal, expressRate, freeShipThreshold, standardRate]);
 
-  const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount + shipping;
+  // No discount: there is no promo system. The old COAST10 control computed
+  // 10% here in the browser, and the server now re-prices every order from the
+  // product table and forces the discount to 0 — so leaving it would have shown
+  // the customer a total they would not be charged. Restore this alongside a
+  // server-side promo table, never before it.
+  const discount = 0;
+  const total = subtotal + shipping;
 
   const deliveryLabel =
     DELIVERY_OPTIONS.find((d) => d.key === delivery)?.label ?? "Shipping";
 
-  const applyPromo = () => {
-    const code = promo.trim().toUpperCase();
-    if (!code) return;
-    if (code === "COAST10") {
-      setPromoApplied(true);
-      toast("COAST10 applied — 10% off");
-    } else {
-      toast("Invalid code");
-    }
-  };
 
   const onSubmit = async (values: CheckoutFormValues) => {
     const input: IPlaceOrderInput = {
@@ -155,8 +148,6 @@ export function CheckoutView() {
       if (res.ok) {
         setPlaced({ ref: res.reference, name: values.first, email: values.email });
         clear();
-        setPromoApplied(false);
-        setPromo("");
         window.scrollTo({ top: 0 });
       } else {
         toast.error(res.error);
@@ -385,34 +376,12 @@ export function CheckoutView() {
             ))}
           </div>
 
-          <div className="mb-[18px] flex gap-2">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value)}
-              placeholder="Discount code"
-              aria-label="Discount code"
-              className="flex-1 border border-line-deep bg-cream px-3.5 py-3 text-[13px] text-ink outline-none focus:border-teal"
-            />
-            <button
-              type="button"
-              onClick={applyPromo}
-              className="bg-ink px-[18px] text-[11px] tracking-[0.14em] uppercase text-white transition-colors hover:bg-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
-            >
-              Apply
-            </button>
-          </div>
 
           <div className="border-t border-[#DCD0BC] pt-4">
             <div className="flex justify-between py-[7px] text-sm text-stone-deep">
               <span>Subtotal</span>
               <span className="text-ink">{formatPrice(subtotal, currency)}</span>
             </div>
-            {discount > 0 ? (
-              <div className="flex justify-between py-[7px] text-sm text-stone-deep">
-                <span>Discount (COAST10)</span>
-                <span className="text-ink">−{formatPrice(discount, currency)}</span>
-              </div>
-            ) : null}
             <div className="flex justify-between py-[7px] text-sm text-stone-deep">
               <span>{deliveryLabel}</span>
               <span className="text-ink">

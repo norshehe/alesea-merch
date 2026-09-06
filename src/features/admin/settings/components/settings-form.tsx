@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Field } from "@/features/admin/components/field";
 import { SubmitButton } from "@/features/admin/components/submit-button";
+import { useUnsavedChangesGuard } from "@/features/admin/hooks/use-unsaved-changes-guard";
 import { ImageUploadField } from "@/features/admin/components/image-upload-field";
 import { LinkListField } from "@/features/admin/components/link-list-field";
 import {
@@ -137,11 +138,16 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
     handleSubmit,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<SettingsFormValues, undefined, SettingsValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: toDefaults(settings),
   });
+
+  // A multi-tab form: unsaved work can sit on a tab that is not even visible,
+  // which makes losing it to a stray reload especially easy. An upload counts
+  // too — the bytes are in Storage but nothing references them until Save.
+  useUnsavedChangesGuard(isDirty || uploading > 0);
 
   // `useWatch`, not the `watch()` from useForm: the latter is a new function on
   // every render, which the React Compiler refuses to memoize.

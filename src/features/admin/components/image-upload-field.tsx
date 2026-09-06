@@ -156,20 +156,23 @@ export function ImageUploadField({
     if (inputRef.current) inputRef.current.value = "";
   }
 
-  async function handleRemove(index: number) {
-    const image = value[index];
+  /**
+   * Removal is PURELY LOCAL — it drops the entry from the field array and
+   * touches Storage not at all.
+   *
+   * ⚠️ This used to call `storage.remove()` immediately, and the dangerous case
+   * was the SUCCESSFUL delete: `product_images` still pointed at the object, so
+   * cancelling the form or navigating away left the live product page rendering
+   * a 404 with no undo. The bytes are now deleted by `saveProduct` /
+   * `saveCategory`, which already compute the difference between the rows that
+   * exist and the paths that were submitted, and only after those rows commit.
+   *
+   * The cost: an image uploaded for a product that is never saved leaks its
+   * object. That is accepted — the answer is a periodic sweep of the `media`
+   * bucket against `product_images` and `shop_categories`, not more code here.
+   */
+  function handleRemove(index: number) {
     onChange(value.filter((_, i) => i !== index));
-
-    // Best effort: the row is already gone from the form, so a failed delete
-    // costs an orphaned object, never a broken product.
-    const supabase = createSupabaseBrowserClient();
-    const { error } = await supabase.storage
-      .from(MEDIA_BUCKET)
-      .remove([image.path]);
-    if (error) {
-      console.error("[admin-images] remove failed", error);
-      toast.warning("Image removed, but the file is still in storage.");
-    }
   }
 
   function move(index: number, direction: -1 | 1) {
@@ -244,7 +247,7 @@ export function ImageUploadField({
               size="icon-sm"
               aria-label={`Remove image ${index + 1}`}
               disabled={disabled}
-              onClick={() => void handleRemove(index)}
+              onClick={() => handleRemove(index)}
             >
               <X aria-hidden="true" />
             </Button>

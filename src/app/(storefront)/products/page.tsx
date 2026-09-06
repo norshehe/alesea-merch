@@ -7,8 +7,8 @@ import { CategoryFilter } from "@/features/catalog/components/category-filter";
 import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
 import type { CatalogCategory } from "@/features/catalog/types";
 
-// Same cadence as the home page: Contentful copy and Airtable stock surface
-// within ~a minute without a redeploy, while the page still prerenders.
+// Same cadence as the home page: Supabase copy and stock surface within ~a
+// minute without a redeploy.
 export const revalidate = 60;
 
 export const metadata: Metadata = {
@@ -36,6 +36,13 @@ export default async function ProductsPage({
 
   const active = isCategory(category) ? category : undefined;
 
+  // A `category` that was asked for but matches no product category must show
+  // an empty grid, not the whole catalog. Shop category tiles use a wider set
+  // of filter keys than products do (`accessories`, `all`), so a tile can
+  // legitimately point at a category nothing is filed under yet — and silently
+  // rendering everything would tell the customer the opposite.
+  const unmatchedFilter = category !== undefined && category !== "all" && !active;
+
   // Categories present in the catalog, in first-seen order — an empty category
   // never gets a pill that leads to an empty grid.
   const categories = products.reduce<CatalogCategory[]>((acc, product) => {
@@ -43,9 +50,11 @@ export default async function ProductsPage({
     return acc;
   }, []);
 
-  const visible = active
-    ? products.filter((product) => product.category === active)
-    : products;
+  const visible = unmatchedFilter
+    ? []
+    : active
+      ? products.filter((product) => product.category === active)
+      : products;
 
   // Stock is computed for the full catalog so the summary is stable regardless
   // of the active filter.

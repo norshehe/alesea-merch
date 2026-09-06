@@ -1,5 +1,6 @@
 import { Hero } from "@/features/catalog/components/home/hero";
 import { Assurances } from "@/features/catalog/components/home/assurances";
+import { CategoryTiles } from "@/features/catalog/components/home/category-tiles";
 import { ProductGrid } from "@/features/catalog/components/product-grid";
 import { EditorialSplit } from "@/features/catalog/components/home/editorial-split";
 import { CarryFeature } from "@/features/catalog/components/home/carry-feature";
@@ -8,9 +9,9 @@ import { getCatalog } from "@/features/catalog/server/catalog";
 import { getInventory } from "@/features/catalog/server/inventory";
 import { buildGridStock } from "@/features/catalog/lib/build-grid-stock";
 
-// Revalidate Contentful-backed content periodically so edits surface without a
+// Revalidate Supabase-backed content periodically so edits surface without a
 // redeploy, while still prerendering statically. Inventory is read here too, so
-// Airtable stock edits surface within ~a minute.
+// stock edits surface within ~a minute.
 export const revalidate = 60;
 
 export default async function HomePage() {
@@ -28,9 +29,13 @@ export default async function HomePage() {
     <>
       <Hero content={content} />
       <Assurances content={content} />
+      <CategoryTiles content={content} />
       <ProductGrid
         products={products}
         stock={gridStock}
+        // The grid's default heading is the category strip's heading, and the
+        // strip now sits directly above it — give the grid its own.
+        heading="Shop the collection"
         action={{ href: "/products", label: "View all products" }}
       />
       <EditorialSplit content={content} tees={tees} />

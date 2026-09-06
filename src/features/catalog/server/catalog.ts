@@ -11,35 +11,38 @@ import type { ICatalogProduct } from "@/features/catalog/types";
  *
  * Supabase is the ONLY source of truth — there is deliberately no hardcoded
  * fallback catalog. A stale in-code catalog would serve wrong prices and
- * phantom products, which is worse than an empty grid; and ISR already keeps
- * serving the last good render when a revalidation fetch fails. Resilience
- * belongs in the caching layer, not in duplicated product data.
+ * phantom products, which is worse than no render at all.
+ *
+ * FETCH ERRORS MUST THROW. ISR only keeps serving the last good render when a
+ * revalidation *throws*; a swallowed error that returns `[]` / `undefined` is a
+ * successful render of an empty grid — or a `notFound()` — and that gets
+ * written into the ISR cache and served to everyone for the next `revalidate`
+ * window. A transient network blip would become a cached 404. Throwing instead
+ * fires the segment's `error.tsx` on a cold render and leaves the previous
+ * cache entry intact on a background revalidation.
+ *
+ * `undefined` from {@link getProduct} therefore means exactly one thing: the
+ * query succeeded and matched no row. That, and only that, warrants
+ * `notFound()`.
  */
 
-/** All published products, ordered by `sort_order` then title. */
+/**
+ * All published products, ordered by `sort_order` then title.
+ * Throws when the query fails — never returns `[]` to mask an error.
+ */
 export async function getCatalog(): Promise<ICatalogProduct[]> {
-  try {
-    return await getProductsFromSupabase();
-  } catch (error) {
-    console.error("[catalog] Supabase product fetch failed.", error);
-    return [];
-  }
+  return getProductsFromSupabase();
 }
 
-/** A single published product by slug — `undefined` lets callers `notFound()`. */
+/**
+ * A single published product by slug.
+ * `undefined` means "no such row" (a successful query with zero rows), which
+ * lets callers `notFound()`. Query failures throw.
+ */
 export async function getProduct(
   slug: string,
 ): Promise<ICatalogProduct | undefined> {
-  try {
-    const product = await getProductBySlugFromSupabase(slug);
-    return product ?? undefined;
-  } catch (error) {
-    console.error(
-      `[catalog] Supabase fetch failed for slug "${slug}".`,
-      error,
-    );
-    return undefined;
-  }
+  return (await getProductBySlugFromSupabase(slug)) ?? undefined;
 }
 
 /**

@@ -2,9 +2,13 @@
 
 import { requireAdmin } from "@/features/admin/server/auth";
 import {
-  revalidateAllProducts,
-  revalidateProduct,
-} from "@/features/admin/server/revalidate";
+  firstIssue,
+  notWrittenMessage,
+  toActionMessage,
+  type ActionResult,
+  type ConstraintMessages,
+} from "@/features/admin/server/action-result";
+import { revalidateStorefrontProducts } from "@/features/admin/server/revalidate";
 import {
   productSchema,
   type ProductFormValues,
@@ -22,67 +26,26 @@ import { MEDIA_BUCKET } from "@/lib/supabase/storage";
  * Every action re-parses its input server-side: the client schema is a UX
  * affordance, not a security boundary.
  *
- * Images are handled as ROWS only. Storage objects are uploaded and deleted by
- * the browser (see `ImageUploadField`) because a Server Action body caps at
- * ~1MB; the one exception is `deleteProduct`, which has no client to do it.
+ * Image BYTES are uploaded by the browser (see `ImageUploadField`) because a
+ * Server Action body caps at ~1MB. They are DELETED here, and only here: the
+ * browser used to delete on remove, which destroyed the object of a live
+ * product the moment the operator changed their mind and hit Cancel.
  */
 
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : T))
-  | { ok: false; error: string };
+/** Constraint names this table can raise, in operator language. */
+const PRODUCT_CONSTRAINTS: ConstraintMessages = {
+  products_slug_key: "That slug is already used by another product.",
+  product_images_path_key:
+    "One of those images is already attached to another product.",
+  products_price_or_coming_soon:
+    "A product with no price must be marked as coming soon.",
+  products_slug_format:
+    "Slug must be lowercase words separated by single dashes.",
+  products_colors_shape: "Every colour needs a name and a 6-digit hex value.",
+};
 
-interface IPostgresError {
-  code?: string;
-  message: string;
-}
-
-function isPostgresError(error: unknown): error is IPostgresError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  );
-}
-
-/**
- * Translate a constraint violation into something an operator can act on.
- * The raw error is logged, never returned — it carries SQL and column names.
- */
 function toMessage(error: unknown, fallback: string): string {
-  if (!isPostgresError(error)) return fallback;
-
-  const message = error.message;
-
-  if (error.code === "23505") {
-    if (message.includes("products_slug_key")) {
-      return "That slug is already used by another product.";
-    }
-    if (message.includes("product_images_path_key")) {
-      return "One of those images is already attached to another product.";
-    }
-    return "Something with that value already exists.";
-  }
-
-  if (error.code === "23514") {
-    if (message.includes("products_price_or_coming_soon")) {
-      return "A product with no price must be marked as coming soon.";
-    }
-    if (message.includes("products_slug_format")) {
-      return "Slug must be lowercase words separated by single dashes.";
-    }
-    if (message.includes("products_colors_shape")) {
-      return "Every colour needs a name and a 6-digit hex value.";
-    }
-    return "That change breaks a database rule — check price, slug and colours.";
-  }
-
-  return fallback;
-}
-
-/** Zod issue → the sentence the operator sees. */
-function firstIssue(issues: { message: string }[]): string {
-  return issues[0]?.message ?? "Some fields need attention.";
+  return toActionMessage(error, fallback, PRODUCT_CONSTRAINTS);
 }
 
 function toRow(values: ProductValues) {
@@ -104,37 +67,79 @@ function toRow(values: ProductValues) {
 }
 
 /**
- * Replace the image rows for a product.
+ * Bring the image ROWS for a product in line with what the form submitted, and
+ * report which storage paths are no longer referenced.
  *
- * Delete-then-insert rather than a diff: the set is under ten rows, `position`
- * is just the array index, and a diff would be more code with more ways to
- * leave the order wrong. Storage objects are untouched — the browser already
- * removed the ones the operator deleted.
+ * ⚠️ INSERT FIRST, DELETE AFTER. The previous version deleted every row for the
+ * product and then inserted the new set, so a failed insert — a duplicate
+ * `storage_path`, an expired session — left a live product with ZERO images,
+ * permanently, behind an error message that said nothing about the gallery. In
+ * this order the same failure leaves stale rows, which are visible, editable,
+ * and fixable by pressing Save again.
+ *
+ * `upsert` on `storage_path` (a real unique constraint, `product_images_path_key`)
+ * rather than a diff: `position` is just the array index, and re-upserting an
+ * unchanged row is free.
  */
-async function replaceImages(
+async function writeImages(
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
   productId: string,
   images: ProductValues["images"],
-) {
-  const { error: deleteError } = await supabase
+): Promise<string[]> {
+  const { data: before, error: readError } = await supabase
     .from("product_images")
-    .delete()
+    .select("storage_path")
     .eq("product_id", productId);
-  if (deleteError) throw deleteError;
+  if (readError) throw readError;
 
-  if (images.length === 0) return;
+  if (images.length > 0) {
+    const { error: upsertError } = await supabase.from("product_images").upsert(
+      images.map((image, index) => ({
+        product_id: productId,
+        storage_path: image.path,
+        alt: image.alt,
+        width: image.width,
+        height: image.height,
+        position: index,
+      })),
+      { onConflict: "storage_path" },
+    );
+    if (upsertError) throw upsertError;
+  }
 
-  const { error: insertError } = await supabase.from("product_images").insert(
-    images.map((image, index) => ({
-      product_id: productId,
-      storage_path: image.path,
-      alt: image.alt,
-      width: image.width,
-      height: image.height,
-      position: index,
-    })),
-  );
-  if (insertError) throw insertError;
+  const keep = new Set(images.map((image) => image.path));
+  const stale = (before ?? [])
+    .map((row) => row.storage_path)
+    .filter((path) => !keep.has(path));
+
+  if (stale.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("product_images")
+      .delete()
+      .eq("product_id", productId)
+      .in("storage_path", stale);
+    if (deleteError) throw deleteError;
+  }
+
+  return stale;
+}
+
+/**
+ * Drop storage objects nothing points at any more. Best effort by design: the
+ * rows are already correct, so a failure costs bytes, not a broken product.
+ *
+ * ⚠️ This is the ONLY place a save deletes bytes, and it runs after the rows
+ * are committed. An upload for a product that is never created still leaks its
+ * object — accepted deliberately: the fix is a periodic sweep of `media`
+ * against `product_images`/`shop_categories`, not more code on this path.
+ */
+async function removeStorageObjects(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  paths: string[],
+) {
+  if (paths.length === 0) return;
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).remove(paths);
+  if (error) console.error("[admin-products] storage cleanup failed", error);
 }
 
 /** Create (`id === null`) or update a product, plus its image rows. */
@@ -161,32 +166,59 @@ export async function saveProduct(
         .single();
       if (error) throw error;
 
-      await replaceImages(supabase, data.id, parsed.data.images);
-      revalidateProduct(data.slug);
+      let stale: string[];
+      try {
+        stale = await writeImages(supabase, data.id, parsed.data.images);
+      } catch (imageError) {
+        // There is no transaction across these two writes: the product row is
+        // already committed. Roll it back so the operator can fix the images
+        // and press Create again — otherwise the form stays in create mode and
+        // every retry hits the slug unique constraint, forever, on a product
+        // they cannot see.
+        const { error: rollbackError } = await supabase
+          .from("products")
+          .delete()
+          .eq("id", data.id)
+          .select("id");
+
+        if (rollbackError) {
+          console.error(
+            "[admin-products] create rollback failed",
+            rollbackError,
+          );
+          console.error("[admin-products] create image write failed", imageError);
+          return {
+            ok: false,
+            error:
+              "The product was created but its images could not be saved, and it could not be removed again. Open it from the products list and fix the images there.",
+          };
+        }
+        throw imageError;
+      }
+
+      await removeStorageObjects(supabase, stale);
+      revalidateStorefrontProducts();
       return { ok: true, id: data.id, slug: data.slug };
     }
 
-    // Read the current slug BEFORE the update so a rename can also invalidate
-    // the old public URL.
-    const { data: existing, error: readError } = await supabase
-      .from("products")
-      .select("slug")
-      .eq("id", id)
-      .maybeSingle();
-    if (readError) throw readError;
-    if (!existing) return { ok: false, error: "That product no longer exists." };
-
+    // `.select()` on the UPDATE is not decoration: PostgREST reports no error
+    // when a write matches nothing, and an RLS-denied write IS a zero-row write.
     const { data, error } = await supabase
       .from("products")
       .update(row)
       .eq("id", id)
-      .select("id, slug")
-      .single();
+      .select("id, slug");
     if (error) throw error;
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("product") };
+    }
 
-    await replaceImages(supabase, id, parsed.data.images);
-    revalidateProduct(data.slug, existing.slug);
-    return { ok: true, id: data.id, slug: data.slug };
+    const saved = data[0];
+    const stale = await writeImages(supabase, id, parsed.data.images);
+    await removeStorageObjects(supabase, stale);
+
+    revalidateStorefrontProducts();
+    return { ok: true, id: saved.id, slug: saved.slug };
   } catch (error) {
     console.error("[admin-products] save failed", error);
     return { ok: false, error: toMessage(error, "Could not save this product.") };
@@ -212,22 +244,22 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
       .eq("product_id", id);
     if (readError) throw readError;
 
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { data, error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id)
+      .select("id");
     if (error) throw error;
-
-    const paths = (images ?? []).map((image) => image.storage_path);
-    if (paths.length > 0) {
-      const { error: storageError } = await supabase.storage
-        .from(MEDIA_BUCKET)
-        .remove(paths);
-      // Best effort: the product is already gone. Orphaned bytes are a cleanup
-      // chore, not a failure worth showing the operator.
-      if (storageError) {
-        console.error("[admin-products] storage cleanup failed", storageError);
-      }
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("product") };
     }
 
-    revalidateAllProducts();
+    await removeStorageObjects(
+      supabase,
+      (images ?? []).map((image) => image.storage_path),
+    );
+
+    revalidateStorefrontProducts();
     return { ok: true };
   } catch (error) {
     console.error("[admin-products] delete failed", error);
@@ -238,10 +270,20 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 /**
  * Move a product one place up or down in the storefront order.
  *
- * The whole list is renumbered from its current order rather than swapping two
- * `sort_order` values: every product ships with `sort_order = 0` by default, and
- * swapping two zeroes changes nothing at all. Only rows whose number actually
- * changes are written.
+ * ⚠️ There is no transaction here — PostgREST cannot wrap several statements in
+ * one, and adding a database function is out of scope for this change. So the
+ * write set is kept as small as it can be, and a partial failure is REPORTED as
+ * partial rather than as a plain error, because the list order really is wrong
+ * at that point.
+ *
+ * Two rows are enough whenever the pair's `sort_order` values differ. They do
+ * not differ the first time: every product ships with `sort_order = 0` and ties
+ * break on title, so swapping two zeroes changes nothing at all. That one case
+ * renumbers the list from its current order, after which every row has a
+ * distinct number and later reorders are two writes again.
+ *
+ * Two admins reordering at once still interleave; the fix for that is a
+ * database function holding a row lock, not more client-side care.
  */
 export async function reorderProduct(
   id: string,
@@ -266,24 +308,35 @@ export async function reorderProduct(
     if (index === -1) return { ok: false, error: "That product no longer exists." };
 
     const target = direction === "up" ? index - 1 : index + 1;
+    // Already at the end — a no-op, not an error.
     if (target < 0 || target >= rows.length) return { ok: true };
 
-    const ordered = [...rows];
-    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+    const updates = planReorder(rows, index, target);
 
-    const updates = ordered
-      .map((row, position) => ({ id: row.id, position, previous: row.sort_order }))
-      .filter((row) => row.position !== row.previous);
-
+    let applied = 0;
     for (const update of updates) {
-      const { error: updateError } = await supabase
+      const { data: written, error: updateError } = await supabase
         .from("products")
-        .update({ sort_order: update.position })
-        .eq("id", update.id);
-      if (updateError) throw updateError;
+        .update({ sort_order: update.sortOrder })
+        .eq("id", update.id)
+        .select("id");
+      if (updateError || !written || written.length === 0) {
+        if (updateError) {
+          console.error("[admin-products] reorder write failed", updateError);
+        }
+        revalidateStorefrontProducts();
+        return {
+          ok: false,
+          error:
+            applied === 0
+              ? notWrittenMessage("product")
+              : `Only ${applied} of ${updates.length} products moved, so the order is now partly wrong. Reload the list and try again.`,
+        };
+      }
+      applied += 1;
     }
 
-    revalidateAllProducts();
+    revalidateStorefrontProducts();
     return { ok: true };
   } catch (error) {
     console.error("[admin-products] reorder failed", error);
@@ -291,7 +344,42 @@ export async function reorderProduct(
   }
 }
 
-/** Publish or unpublish a product without opening the form. */
+/**
+ * The smallest set of `sort_order` writes that swaps two list positions.
+ *
+ * Shared shape with `reorderCategory`, kept local to each feature because the
+ * table name is baked into the query, not the arithmetic.
+ */
+function planReorder(
+  rows: { id: string; sort_order: number }[],
+  index: number,
+  target: number,
+): { id: string; sortOrder: number }[] {
+  const moved = rows[index];
+  const displaced = rows[target];
+
+  if (moved.sort_order !== displaced.sort_order) {
+    // Distinct numbers: exchanging them is the whole move.
+    return [
+      { id: moved.id, sortOrder: displaced.sort_order },
+      { id: displaced.id, sortOrder: moved.sort_order },
+    ];
+  }
+
+  // Tied. Numbers carry no information yet, so give the list one — this is the
+  // only path that writes more than two rows, and it happens at most once.
+  const ordered = [...rows];
+  [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+  return ordered
+    .map((row, position) => ({ id: row.id, sortOrder: position, was: row.sort_order }))
+    .filter((row) => row.sortOrder !== row.was)
+    .map(({ id, sortOrder }) => ({ id, sortOrder }));
+}
+
+/**
+ * Publish or unpublish a product without opening the form. Surfaced as the
+ * toggle in each row of the product list.
+ */
 export async function setProductStatus(
   id: string,
   status: ProductStatus,
@@ -305,11 +393,15 @@ export async function setProductStatus(
       .from("products")
       .update({ status })
       .eq("id", id)
-      .select("slug")
-      .single();
+      .select("id");
     if (error) throw error;
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("product") };
+    }
 
-    revalidateProduct(data.slug);
+    // Every product page carries a strip of the others, so publishing one
+    // changes all of them.
+    revalidateStorefrontProducts();
     return { ok: true };
   } catch (error) {
     console.error("[admin-products] status change failed", error);

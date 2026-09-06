@@ -26,6 +26,13 @@ import type { ICatalogProduct } from "@/features/catalog/types";
  *     under-sends rather than double-sends. A failed send rolls the stamp back.
  *  3. The first stamp of a run acts as a preflight: if writing to Supabase
  *     fails at all, the run aborts having sent nothing.
+ *
+ * NO CUSTOMER EMAIL ADDRESS IS EVER LOGGED OR RETURNED. Vercel's logs are
+ * readable by everyone on the project and are shipped to whatever drain is
+ * attached; the mailing list is the exact data `signups` denies `anon` in the
+ * database, so writing it to stdout would hand it out through the back door.
+ * Signup ids identify a row precisely and are useless on their own — every
+ * diagnostic below uses one.
  */
 
 /** Outcome of one run, returned to the cron route and logged. */
@@ -128,7 +135,9 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
 
     const slug = slugForSource(signup.source, products);
     if (!slug) {
-      result.skipped.push(`Signup source "${signup.source}" matches no product.`);
+      // The id, not the source: this string is returned in the cron response,
+      // and `source` is attacker-influenced free text from a public form.
+      result.skipped.push(`Signup ${signup.id} has a source matching no product.`);
       continue;
     }
 
@@ -149,10 +158,13 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
     result.products.push({ slug, recipients: recipients.length });
 
     if (!live) {
-      // Dry run: report who would be emailed, touch nothing.
+      // Dry run: report HOW MANY would be emailed and which rows, touch
+      // nothing. Dry run is the production default, so this line runs on every
+      // scheduled invocation — it previously printed the entire mailing list to
+      // the logs, daily.
       console.info(
-        `[back-in-stock] dry-run — would email ${recipients.length} recipient(s) about ${slug}:`,
-        recipients.map((r) => r.email).join(", "),
+        `[back-in-stock] dry-run — would email ${recipients.length} recipient(s) about ${slug}. Signup ids:`,
+        recipients.map((r) => r.id).join(", "),
       );
       continue;
     }
@@ -174,7 +186,7 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
           return result;
         }
         console.error(
-          `[back-in-stock] could not stamp ${recipient.email} — skipping to avoid a duplicate send.`,
+          `[back-in-stock] could not stamp signup ${recipient.id} — skipping to avoid a duplicate send.`,
           error,
         );
         result.failed += 1;
@@ -186,7 +198,7 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
         result.sent += 1;
       } catch (error) {
         console.error(
-          `[back-in-stock] send failed for ${recipient.email} — rolling back the stamp.`,
+          `[back-in-stock] send failed for signup ${recipient.id} — rolling back the stamp.`,
           error,
         );
         result.failed += 1;
@@ -195,7 +207,7 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
           await markSignupNotified(recipient.id, null, null);
         } catch (rollbackError) {
           console.error(
-            `[back-in-stock] rollback failed for ${recipient.email} — it will not be retried automatically.`,
+            `[back-in-stock] rollback failed for signup ${recipient.id} — it will not be retried automatically.`,
             rollbackError,
           );
         }

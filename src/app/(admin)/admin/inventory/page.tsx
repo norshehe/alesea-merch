@@ -1,4 +1,6 @@
-import { Boxes } from "lucide-react";
+import Link from "next/link";
+import { Boxes, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/features/admin/components/empty-state";
 import { PageHeader } from "@/features/admin/components/page-header";
 import { InventoryGrid } from "@/features/admin/inventory/components/inventory-grid";
@@ -33,6 +35,12 @@ export default async function InventoryPage({
           icon={Boxes}
           title="No products yet"
           description="Stock is recorded per product variant, so there is nothing to count until a product exists."
+          action={
+            <Button render={<Link href="/admin/products/new" />}>
+              <Plus aria-hidden="true" />
+              New product
+            </Button>
+          }
         />
       </>
     );

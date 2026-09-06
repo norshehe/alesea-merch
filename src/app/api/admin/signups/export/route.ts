@@ -25,8 +25,16 @@ import {
  */
 export const dynamic = "force-dynamic";
 
-/** Prefix that stops a spreadsheet treating a cell as a formula. */
-const FORMULA_TRIGGERS = new Set(["=", "+", "-", "@"]);
+/**
+ * Leading characters that make a spreadsheet treat a cell as something other
+ * than text.
+ *
+ * `= + - @` are the formula starters. Tab, CR and LF are here because Excel and
+ * Sheets STRIP leading whitespace before parsing, so `\t=cmd|…` is read as
+ * `=cmd|…` and the naive prefix check never fires. `|` starts a DDE payload
+ * (`|cmd|'/c calc'!A0`), which is the same class of attack without an `=`.
+ */
+const FORMULA_TRIGGERS = new Set(["=", "+", "-", "@", "|", "\t", "\r", "\n"]);
 
 /**
  * One CSV cell.

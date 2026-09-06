@@ -13,7 +13,7 @@ import { MAIN_NAV } from "@/components/layout/main-nav";
 import type { INavLink } from "@/lib/supabase/siteSettings/siteSettingsClient";
 
 interface IMobileNavProps {
-  /** Extra storefront links from Contentful, appended after the mirrored nav. */
+  /** Extra storefront links from `site_settings`, appended after the mirrored nav. */
   extraLinks: INavLink[];
   bookNowLabel: string;
   bookNowUrl: string;

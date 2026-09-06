@@ -24,6 +24,16 @@ export interface IProductStockSummary {
   units: number;
 }
 
+/**
+ * How many `inventory` rows the list roll-up will read before it gives up.
+ *
+ * PostgREST caps an unbounded select at 1000 rows and returns the truncation
+ * SILENTLY, which would show a wrong-but-plausible unit count. An explicit
+ * range past that cap lets the read detect its own truncation and report the
+ * roll-up as unavailable instead of lying.
+ */
+const INVENTORY_SCAN_LIMIT = 5000;
+
 export interface IAdminProductListItem {
   id: string;
   slug: string;
@@ -36,7 +46,12 @@ export interface IAdminProductListItem {
   sortOrder: number;
   /** First image by position, or null when the product has none. */
   image: { url: string; alt: string } | null;
-  stock: IProductStockSummary;
+  /**
+   * `null` when the inventory read FAILED or truncated — not the same thing as
+   * "no rows". In this app "not tracked" is a load-bearing claim meaning
+   * "treated as in stock", so it must never stand in for "we do not know".
+   */
+  stock: IProductStockSummary | null;
 }
 
 export interface IAdminProduct {
@@ -67,6 +82,10 @@ export interface IInventoryOrphan {
   size: string;
   stock: number;
 }
+
+/** A UUID, so a hand-typed URL becomes a 404 rather than a Postgres 22P02. */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -100,19 +119,31 @@ export async function listAdminProducts(): Promise<IAdminProductListItem[]> {
       .order("title", { ascending: true }),
     // One flat read, grouped in memory: a handful of products means a join per
     // row would cost more than it saves.
-    supabase.from("inventory").select("product_id, stock"),
+    supabase
+      .from("inventory")
+      .select("product_id, stock")
+      .range(0, INVENTORY_SCAN_LIMIT),
   ]);
 
   if (products.error) {
     console.error("[admin-products] list failed", products.error);
     throw new Error("Could not load products.");
   }
+  const inventoryRows = inventory.data ?? [];
+  // A truncated read would under-count units for the products at the tail, and
+  // an under-count reads as real data. Both failures collapse to "unknown".
+  const stockUnavailable =
+    inventory.error !== null || inventoryRows.length > INVENTORY_SCAN_LIMIT;
   if (inventory.error) {
     console.error("[admin-products] inventory roll-up failed", inventory.error);
+  } else if (stockUnavailable) {
+    console.error(
+      `[admin-products] inventory roll-up truncated at ${INVENTORY_SCAN_LIMIT} rows`,
+    );
   }
 
   const stockByProduct = new Map<string, IProductStockSummary>();
-  for (const row of inventory.data ?? []) {
+  for (const row of inventoryRows) {
     const summary = stockByProduct.get(row.product_id) ?? {
       tracked: 0,
       outOfStock: 0,
@@ -143,17 +174,24 @@ export async function listAdminProducts(): Promise<IAdminProductListItem[]> {
       image: url
         ? { url, alt: first.alt.trim() || row.title }
         : null,
-      stock: stockByProduct.get(row.id) ?? {
-        tracked: 0,
-        outOfStock: 0,
-        units: 0,
-      },
+      stock: stockUnavailable
+        ? null
+        : (stockByProduct.get(row.id) ?? {
+            tracked: 0,
+            outOfStock: 0,
+            units: 0,
+          }),
     };
   });
 }
 
 /** A single product with its ordered images, for the edit form. */
 export async function getAdminProduct(id: string): Promise<IAdminProduct | null> {
+  // Guard before the query, as `getAdminCategory` does: without it a hand-typed
+  // `/admin/products/foo` reaches Postgres, raises 22P02 and renders a 500
+  // where the honest answer is a 404.
+  if (!UUID_PATTERN.test(id)) return null;
+
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase
@@ -169,16 +207,34 @@ export async function getAdminProduct(id: string): Promise<IAdminProduct | null>
   }
   if (!data) return null;
 
+  /**
+   * ⚠️ Never DROP a row here. These images round-trip: the form posts back what
+   * it was given, and `writeImages` deletes every row it was not given — so
+   * silently skipping an unrenderable row would delete it, and its bytes, on
+   * the next save. `publicUrl` only returns null when the Storage host is
+   * unconfigured, which is an environment fault, so it is surfaced as one.
+   */
   const images: IUploadedImage[] = [...(data.product_images ?? [])]
     .sort((a, b) => a.position - b.position)
-    .map((row) => ({
-      url: publicUrl(row.storage_path) ?? "",
-      path: row.storage_path,
-      alt: row.alt,
-      width: row.width,
-      height: row.height,
-    }))
-    .filter((image) => image.url.length > 0);
+    .map((row) => {
+      const url = publicUrl(row.storage_path);
+      if (!url) {
+        console.error(
+          "[admin-products] no public URL for image",
+          row.storage_path,
+        );
+        throw new Error(
+          "Storage is not configured, so this product's images cannot be edited safely.",
+        );
+      }
+      return {
+        url,
+        path: row.storage_path,
+        alt: row.alt,
+        width: row.width,
+        height: row.height,
+      };
+    });
 
   return {
     id: data.id,

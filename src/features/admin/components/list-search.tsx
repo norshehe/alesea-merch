@@ -5,32 +5,53 @@ import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { SignupStatus } from "@/features/admin/signups/server/signup.queries";
 
-interface ISignupSearchProps {
+interface IListSearchProps {
+  /** Where a search lands, e.g. `/admin/orders`. */
+  basePath: string;
   /** Current term, so the box survives a refresh and a back navigation. */
   q: string;
-  /** Kept when searching, so a search narrows the chosen chip rather than resetting it. */
-  status: SignupStatus | null;
+  /**
+   * Filters to preserve alongside the term, so a search narrows the chosen chip
+   * rather than resetting it. Empty and null values are dropped.
+   */
+  preserve?: Record<string, string | null | undefined>;
+  placeholder: string;
+  /** The accessible name of the box — say what is searched and by what. */
+  label: string;
 }
 
 /**
- * Email / source search. Submits a navigation rather than filtering in the
- * browser: the list is paginated server-side, so the URL is the only place the
- * query can live and still be correct on page 2 — and it is also what the CSV
+ * Search box for a server-paginated admin list.
+ *
+ * Submits a NAVIGATION rather than filtering in the browser: these lists are
+ * paginated server-side, so the URL is the only place the query can live and
+ * still be correct on page 2 — and on `/admin/signups` it is also what the CSV
  * export reads to mirror the current view.
+ *
+ * `order-search.tsx` and `signup-search.tsx` were byte-identical apart from
+ * their two labels and their path; this is that component with those three
+ * things as props.
  */
-export function SignupSearch({ q, status }: ISignupSearchProps) {
+export function ListSearch({
+  basePath,
+  q,
+  preserve,
+  placeholder,
+  label,
+}: IListSearchProps) {
   const router = useRouter();
   const [term, setTerm] = useState(q);
 
   function go(next: string) {
     const params = new URLSearchParams();
-    if (status) params.set("status", status);
+    for (const [key, value] of Object.entries(preserve ?? {})) {
+      if (value) params.set(key, value);
+    }
     if (next.trim()) params.set("q", next.trim());
     // `page` is intentionally dropped — a new query starts at page 1.
     const query = params.toString();
-    router.push(query ? `/admin/signups?${query}` : "/admin/signups");
+    router.push(query ? `${basePath}?${query}` : basePath);
   }
 
   return (
@@ -50,8 +71,8 @@ export function SignupSearch({ q, status }: ISignupSearchProps) {
           type="search"
           value={term}
           onChange={(event) => setTerm(event.target.value)}
-          placeholder="Email or source"
-          aria-label="Search signups by email or source"
+          placeholder={placeholder}
+          aria-label={label}
           className="w-64 pl-8"
         />
       </div>

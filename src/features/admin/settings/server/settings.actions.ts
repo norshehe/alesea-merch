@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/features/admin/server/auth";
 import {
+  firstIssue,
+  toActionMessage,
+  type ActionResult,
+  type ConstraintMessages,
+} from "@/features/admin/server/action-result";
+import {
   settingsSchema,
   type SettingsFormValues,
   type SettingsValues,
@@ -21,41 +27,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * `features/admin/server/revalidate.ts` to keep this feature self-contained.
  */
 
-type ActionResult = { ok: true } | { ok: false; error: string };
+const SETTINGS_CONSTRAINTS: ConstraintMessages = {
+  site_settings_nav_shape: "Every navigation link needs both a label and a URL.",
+  site_settings_social_shape:
+    "Every social link needs both a label and a URL.",
+};
 
-interface IPostgresError {
-  code?: string;
-  message: string;
-}
-
-function isPostgresError(error: unknown): error is IPostgresError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  );
-}
-
-/** Constraint violation → something an operator can act on. */
 function toMessage(error: unknown, fallback: string): string {
-  if (!isPostgresError(error)) return fallback;
-
-  if (error.code === "23514") {
-    if (error.message.includes("site_settings_nav_shape")) {
-      return "Every navigation link needs both a label and a URL.";
-    }
-    if (error.message.includes("site_settings_social_shape")) {
-      return "Every social link needs both a label and a URL.";
-    }
-    return "That change breaks a database rule — check the links and amounts.";
-  }
-
-  return fallback;
-}
-
-function firstIssue(issues: { message: string }[]): string {
-  return issues[0]?.message ?? "Some fields need attention.";
+  return toActionMessage(error, fallback, SETTINGS_CONSTRAINTS);
 }
 
 function toRow(values: SettingsValues) {
@@ -118,7 +97,10 @@ export async function saveSiteSettings(
     if (error) throw error;
 
     if (!data) {
-      // Defensive: no seeded row (an unmigrated or manually emptied database).
+      // Zero rows. Usually means no seeded row (an unmigrated or manually
+      // emptied database) — but it is ALSO what an RLS-denied update looks
+      // like, since PostgREST reports no error for one. The insert below
+      // separates the two: RLS refuses it loudly, a missing row accepts it.
       const { error: insertError } = await supabase
         .from("site_settings")
         .insert({ id: 1, ...row });

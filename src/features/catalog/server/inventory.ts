@@ -1,5 +1,8 @@
 import "server-only";
-import { supabasePublic } from "@/lib/supabase/public";
+import {
+  getSupabasePublic,
+  isSupabaseConfigured,
+} from "@/lib/supabase/public";
 import { variantKey } from "@/features/catalog/lib/stock";
 
 /**
@@ -22,16 +25,23 @@ export interface IVariantStock {
 /**
  * Fetch all inventory rows and return a Map keyed by `slug|color|size` → stock.
  *
- * Graceful fallback: when the query errors or throws, this warns and returns an
- * EMPTY map. Callers MUST treat a missing key as in stock — only an explicit `0`
- * means out of stock. This guarantees the store never blocks sales when Supabase
- * is down or a variant row is simply absent.
+ * Graceful fallback: when Supabase is unconfigured, or the query errors or
+ * throws, this warns and returns an EMPTY map. Callers MUST treat a missing key
+ * as in stock — only an explicit `0` means out of stock. This guarantees the
+ * store never blocks sales when Supabase is down or a variant row is absent.
  */
 export async function getInventory(): Promise<Map<string, number>> {
   const inventory = new Map<string, number>();
 
+  if (!isSupabaseConfigured()) {
+    console.warn(
+      "[inventory] Supabase is not configured — treating all variants as in stock",
+    );
+    return inventory;
+  }
+
   try {
-    const { data, error } = await supabasePublic
+    const { data, error } = await getSupabasePublic()
       .from("inventory_by_slug")
       .select("slug, color, size, stock");
 

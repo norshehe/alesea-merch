@@ -1,4 +1,4 @@
-import { supabasePublic } from "@/lib/supabase/public";
+import { getSupabasePublic } from "@/lib/supabase/public";
 import { resolveImageUrl } from "@/lib/supabase/storage";
 import type {
   IShopCategory,
@@ -75,10 +75,12 @@ function toCategories(rows: ShopCategoryRow[]): IShopCategory[] {
  * Returns null when the row is missing so callers apply per-field fallbacks.
  */
 export async function getHomeContentFromSupabase(): Promise<IHomeContent | null> {
+  const supabase = getSupabasePublic();
+
   // Two independent tables — issue both requests at once.
   const [homeResult, categoryResult] = await Promise.all([
-    supabasePublic.from("home_content").select("*").eq("id", 1).maybeSingle(),
-    supabasePublic
+    supabase.from("home_content").select("*").eq("id", 1).maybeSingle(),
+    supabase
       .from("shop_categories")
       .select("*")
       .eq("is_active", true)

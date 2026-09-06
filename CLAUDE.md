@@ -27,9 +27,9 @@ Never mix lanes. `/sc:implement` is not a substitute for `feature-scaffolder` + 
   - `@supabase/ssr` cookie-bound clients — `/admin` routes only.
 - **Data layer**: `*Client.ts` per domain under `src/lib/supabase/`, normalizing rows to `I*` shapes. Components never see raw rows.
 - **RLS is the security boundary**, not application code. Anon can read published products and site content; it has **no policy at all** on `orders` and `signups`, so a leaked anon key cannot export customer data. Run `get_advisors` after any schema change.
-- **State**: Zustand stores (`src/store/*.store.ts`) for global client state (cart). React Query for server state. **Cart is client state — never put product fetches in Zustand.**
+- **State**: Zustand stores (`src/store/*.store.ts`) for global client state (cart). **Cart is client state — never put product fetches in Zustand.** All server data is fetched in Server Components; there is no client-side data fetching. React Query is still installed and `QueryProvider` is still mounted in the storefront layout, but nothing uses it — decide to remove it or use it, rather than adding a second data-fetching style by accident.
 - **Forms**: React Hook Form + Zod schemas (in `src/features/*/schemas/`), resolved via `@hookform/resolvers`.
-- **UI**: Shadcn/Radix primitives in `src/components/ui/`, Lucide icons, Sonner toasts, Tailwind 4 tokens.
+- **UI**: Shadcn primitives in `src/components/ui/` — these wrap **Base UI** (`@base-ui/react`), NOT Radix. There is no `asChild`: a button that navigates uses `render={<Link href="…" />}`. `Select`, `Switch` and `Checkbox` are not native inputs, so RHF must drive them with `<Controller>` — `register()` on them silently yields an empty value. `Input`/`Textarea` forward refs, so `register()` works there. Lucide icons, Sonner toasts, Tailwind 4 tokens.
 - **Auth**: Supabase Auth (magic link, invite-only) guards `/admin` only. Customers never log in — do not add auth to the storefront. Route protection lives in `src/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`).
 
 ### Project Structure
@@ -54,7 +54,6 @@ src/
 - **Type naming**: Interfaces prefixed with `I` (`IProduct`, `ICartLine`).
 - **Domain types**: organized in `lib/supabase/types/<domain>/` with the normalized `I*` shapes, plus shared helpers in `types/common.ts`. Generated row types live in `lib/supabase/types.ts` — never hand-edit them.
 - **Normalize at the boundary**: clients map database rows → `I*`. Components only ever see normalized shapes. `ICatalogProduct`, `ISiteSettings`, `IHomeContent` and `getInventory()`'s `Map<"slug|color|size", number>` are a frozen contract — changing them means touching every component.
-- **Query keys**: every handler exports a `*Keys` factory; never inline string arrays in `useQuery`.
 - **Server vs Client components**: default to Server Components. Add `"use client"` only for interactivity (cart, forms, hooks). Fetch data in Server Components — never duplicate a server fetch in the client.
 - **Error/empty/loading states**: every data surface needs all three (Skeleton, empty state, error message). Use `Skeleton` from `components/ui`.
 - **Feedback**: Sonner (`toast`) for transient feedback only (item added to cart, form submitted). Form validation errors render inline via RHF + the form field components.

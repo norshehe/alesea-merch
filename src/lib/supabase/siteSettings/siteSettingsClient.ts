@@ -1,4 +1,4 @@
-import { supabasePublic } from "@/lib/supabase/public";
+import { getSupabasePublic } from "@/lib/supabase/public";
 import { toImage } from "@/lib/supabase/types/common";
 import type { IImage } from "@/lib/supabase/types/common";
 
@@ -46,7 +46,7 @@ function toNavLinks(raw: unknown): INavLink[] {
  * row is missing so callers can apply per-field fallbacks.
  */
 export async function getSiteSettingsFromSupabase(): Promise<ISiteSettings | null> {
-  const { data, error } = await supabasePublic
+  const { data, error } = await getSupabasePublic()
     .from("site_settings")
     .select("*")
     .eq("id", 1)

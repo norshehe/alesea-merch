@@ -7,6 +7,7 @@ import {
   FREE_SHIP_THRESHOLD,
   SHIPPING,
 } from "@/features/catalog/constants/products";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 
 /**
  * Hardcoded defaults matching the current design. Used per-field when
@@ -51,6 +52,13 @@ function num(value: number | undefined, fallback: number): number {
  * fallback to {@link SETTINGS_FALLBACK} so missing data never breaks render.
  */
 export async function getSiteSettings(): Promise<ISiteSettings> {
+  // The layout renders on every route, so a missing config must degrade to the
+  // design defaults rather than fail the render.
+  if (!isSupabaseConfigured()) {
+    console.warn("[settings] Supabase is not configured — using defaults.");
+    return SETTINGS_FALLBACK;
+  }
+
   let remote: ISiteSettings | null = null;
   try {
     remote = await getSiteSettingsFromSupabase();

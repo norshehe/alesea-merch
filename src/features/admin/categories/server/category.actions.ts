@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/features/admin/server/auth";
 import {
+  firstIssue,
+  notWrittenMessage,
+  toActionMessage,
+  type ActionResult,
+} from "@/features/admin/server/action-result";
+import {
   categorySchema,
   type CategoryFormValues,
   type CategoryValues,
@@ -19,49 +25,18 @@ import { MEDIA_BUCKET } from "@/lib/supabase/storage";
  * affordance, not a security boundary.
  *
  * Categories are rendered ONLY by the home page, so every mutation revalidates
- * `/` and nothing else. `revalidateProduct*` from
- * `@/features/admin/server/revalidate` is deliberately not used: it would blow
- * away `/products` and every PDP for a change that cannot affect them.
- * `revalidatePath("/")` is a literal path, so it needs no `type` argument.
+ * `/` and nothing else. `revalidateStorefrontProducts()` is deliberately not
+ * used: it would blow away `/products` and every PDP for a change that cannot
+ * affect them. `revalidatePath("/")` is a literal path, so it needs no `type`.
  */
-
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : T))
-  | { ok: false; error: string };
-
-interface IPostgresError {
-  code?: string;
-  message: string;
-}
-
-function isPostgresError(error: unknown): error is IPostgresError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  );
-}
 
 /**
- * Translate a database error into something an operator can act on. The raw
- * error is logged, never returned — it carries SQL and column names.
+ * No constraint map: `shop_categories` has no NAMED constraints (see
+ * `0003_content.sql`), so there is nothing table-specific to translate — the
+ * generic codes in `action-result.ts` say everything true about a failure here.
  */
 function toMessage(error: unknown, fallback: string): string {
-  if (!isPostgresError(error)) return fallback;
-
-  // 22P02: a malformed uuid or an enum value the database does not know.
-  if (error.code === "22P02") return "That category no longer exists.";
-  if (error.code === "23514" || error.code === "23502") {
-    return "That change breaks a database rule on this category.";
-  }
-
-  return fallback;
-}
-
-/** Zod issue → the sentence the operator sees. */
-function firstIssue(issues: { message: string }[]): string {
-  return issues[0]?.message ?? "Some fields need attention.";
+  return toActionMessage(error, fallback);
 }
 
 /**
@@ -84,6 +59,26 @@ function toRow(values: CategoryValues) {
     sort_order: values.sortOrder,
     is_active: values.isActive,
   };
+}
+
+/**
+ * Drop a storage object nothing points at any more. Best effort: the row is
+ * already correct, so a failure costs bytes, not a broken tile.
+ *
+ * ⚠️ Bytes are deleted HERE, after the row is committed — never from the
+ * browser when the operator clicks the X, which destroyed the object of a live
+ * tile the moment they changed their mind and hit Cancel. The cost is that an
+ * upload for a category that is never saved leaks its object; that is accepted
+ * deliberately, and the answer is a periodic sweep of `media`, not more code
+ * on this path.
+ */
+async function removeStorageObject(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  path: string | null,
+) {
+  if (!path) return;
+  const { error } = await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+  if (error) console.error("[admin-categories] storage cleanup failed", error);
 }
 
 /** Create (`id === null`) or update one category tile. */
@@ -114,17 +109,34 @@ export async function saveCategory(
       return { ok: true, id: data.id };
     }
 
+    // The path this tile points at BEFORE the write, so a replaced or cleared
+    // upload can have its bytes removed afterwards.
+    const { data: existing, error: readError } = await supabase
+      .from("shop_categories")
+      .select("image_path")
+      .eq("id", id)
+      .maybeSingle();
+    if (readError) throw readError;
+
+    // `.select()` is not decoration: PostgREST reports no error when a write
+    // matches nothing, and an RLS-denied write IS a zero-row write.
     const { data, error } = await supabase
       .from("shop_categories")
       .update(row)
       .eq("id", id)
-      .select("id")
-      .maybeSingle();
+      .select("id");
     if (error) throw error;
-    if (!data) return { ok: false, error: "That category no longer exists." };
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("category") };
+    }
+
+    const previous = existing?.image_path ?? null;
+    if (previous && previous !== row.image_path) {
+      await removeStorageObject(supabase, previous);
+    }
 
     revalidatePath("/");
-    return { ok: true, id: data.id };
+    return { ok: true, id: data[0].id };
   } catch (error) {
     console.error("[admin-categories] save failed", error);
     return {
@@ -155,22 +167,17 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     if (readError) throw readError;
     if (!existing) return { ok: false, error: "That category no longer exists." };
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("shop_categories")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
     if (error) throw error;
-
-    if (existing.image_path) {
-      const { error: storageError } = await supabase.storage
-        .from(MEDIA_BUCKET)
-        .remove([existing.image_path]);
-      // Best effort: the category is already gone. Orphaned bytes are a cleanup
-      // chore, not a failure worth showing the operator.
-      if (storageError) {
-        console.error("[admin-categories] storage cleanup failed", storageError);
-      }
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("category") };
     }
+
+    await removeStorageObject(supabase, existing.image_path);
 
     revalidatePath("/");
     return { ok: true };
@@ -186,10 +193,9 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 /**
  * Move a category one place up or down on the home page.
  *
- * The whole list is renumbered from its current order rather than swapping two
- * `sort_order` values: every row ships with `sort_order = 0` by default, and
- * swapping two zeroes changes nothing at all. Only rows whose number actually
- * changes are written. Same approach as `reorderProduct`.
+ * ⚠️ No transaction — see the long note on `reorderProduct`, which this
+ * mirrors: the smallest possible write set, and a partial failure reported as
+ * partial rather than as a plain error.
  */
 export async function reorderCategory(
   id: string,
@@ -217,19 +223,29 @@ export async function reorderCategory(
     // Already at the end — a no-op, not an error.
     if (target < 0 || target >= rows.length) return { ok: true };
 
-    const ordered = [...rows];
-    [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+    const updates = planReorder(rows, index, target);
 
-    const updates = ordered
-      .map((row, position) => ({ id: row.id, position, previous: row.sort_order }))
-      .filter((row) => row.position !== row.previous);
-
+    let applied = 0;
     for (const update of updates) {
-      const { error: updateError } = await supabase
+      const { data: written, error: updateError } = await supabase
         .from("shop_categories")
-        .update({ sort_order: update.position })
-        .eq("id", update.id);
-      if (updateError) throw updateError;
+        .update({ sort_order: update.sortOrder })
+        .eq("id", update.id)
+        .select("id");
+      if (updateError || !written || written.length === 0) {
+        if (updateError) {
+          console.error("[admin-categories] reorder write failed", updateError);
+        }
+        revalidatePath("/");
+        return {
+          ok: false,
+          error:
+            applied === 0
+              ? notWrittenMessage("category")
+              : `Only ${applied} of ${updates.length} categories moved, so the order is now partly wrong. Reload the list and try again.`,
+        };
+      }
+      applied += 1;
     }
 
     revalidatePath("/");
@@ -241,6 +257,37 @@ export async function reorderCategory(
       error: toMessage(error, "Could not reorder categories."),
     };
   }
+}
+
+/**
+ * The smallest set of `sort_order` writes that swaps two list positions.
+ *
+ * Two rows are enough whenever the pair's numbers differ. They do not differ
+ * the first time — every row ships `sort_order = 0` and ties break on label —
+ * so that one case renumbers the list, after which every row has a distinct
+ * number and later reorders are two writes again.
+ */
+function planReorder(
+  rows: { id: string; sort_order: number }[],
+  index: number,
+  target: number,
+): { id: string; sortOrder: number }[] {
+  const moved = rows[index];
+  const displaced = rows[target];
+
+  if (moved.sort_order !== displaced.sort_order) {
+    return [
+      { id: moved.id, sortOrder: displaced.sort_order },
+      { id: displaced.id, sortOrder: moved.sort_order },
+    ];
+  }
+
+  const ordered = [...rows];
+  [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
+  return ordered
+    .map((row, position) => ({ id: row.id, sortOrder: position, was: row.sort_order }))
+    .filter((row) => row.sortOrder !== row.was)
+    .map(({ id, sortOrder }) => ({ id, sortOrder }));
 }
 
 /**
@@ -260,10 +307,11 @@ export async function setCategoryActive(
       .from("shop_categories")
       .update({ is_active: active })
       .eq("id", id)
-      .select("id")
-      .maybeSingle();
+      .select("id");
     if (error) throw error;
-    if (!data) return { ok: false, error: "That category no longer exists." };
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("category") };
+    }
 
     revalidatePath("/");
     return { ok: true };

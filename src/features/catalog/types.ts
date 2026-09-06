@@ -10,10 +10,10 @@ export type CatalogCategory = "tees" | "bags" | "caps" | "tumblers";
 /**
  * Storefront product shape consumed by the UI.
  *
- * This currently comes from a local catalog (the Contentful space has no
- * `product` content type yet). It is intentionally close to a normalized
- * Contentful shape so it can be swapped for `contentful-domain-scaffolder`
- * output later — keep components depending on this interface, not raw data.
+ * This is the normalized boundary type: `productClient.ts` maps Supabase rows
+ * (plus their `product_images`) onto it, and every component depends on this
+ * interface rather than on raw Postgrest rows. Treat it as a frozen contract —
+ * changing it ripples through the grid, card, detail page and cart.
  */
 export interface ICatalogProduct {
   id: string;
@@ -30,8 +30,8 @@ export interface ICatalogProduct {
   /** Label for the size selector (e.g. "Size", "Fit"). */
   sizeLabel: string;
   /**
-   * Product imagery from Contentful. Empty when none was seeded — the UI
-   * falls back to the `dc-stripe` placeholder in that case.
+   * Product imagery, ordered by `position`. Empty when none was uploaded —
+   * the UI falls back to the `dc-stripe` placeholder in that case.
    */
   images: ICatalogImage[];
   /**
@@ -41,7 +41,7 @@ export interface ICatalogProduct {
   comingSoon?: boolean;
 }
 
-/** Normalized product image (subset of the Contentful asset). */
+/** Normalized product image (a resolved `product_images` row). */
 export interface ICatalogImage {
   url: string;
   alt: string;

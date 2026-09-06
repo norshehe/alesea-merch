@@ -12,86 +12,9 @@ import {
 } from "@/components/ui/table";
 import { PageHeader } from "@/features/admin/components/page-header";
 import { OrderStatusBadge } from "@/features/admin/orders/components/order-status-badge";
-import type { OrderStatus } from "@/features/admin/orders/schemas/order.schema";
 import { EmptyState } from "@/features/admin/components/empty-state";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { stockStatus } from "@/features/catalog/lib/stock";
+import { getDashboardData } from "@/features/admin/server/dashboard.queries";
 import { formatPrice } from "@/lib/format";
-
-interface IRecentOrder {
-  id: string;
-  reference: string;
-  customerName: string;
-  total: number;
-  currency: string;
-  status: OrderStatus;
-  createdAt: string;
-}
-
-interface IDashboardData {
-  publishedProducts: number | null;
-  lowStockVariants: number | null;
-  orders: number | null;
-  pendingSignups: number | null;
-  recentOrders: IRecentOrder[];
-}
-
-/**
- * Reads run through the cookie-bound client, so RLS evaluates them as the
- * signed-in admin — the service-role client is not needed and would bypass the
- * checks that make this safe.
- *
- * A count that fails comes back as `null` and renders as "—" rather than
- * throwing: one broken query should not take down the whole dashboard.
- */
-async function getDashboardData(): Promise<IDashboardData> {
-  const supabase = await createSupabaseServerClient();
-
-  const [products, inventory, orders, signups, recent] = await Promise.all([
-    supabase
-      .from("products")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "published"),
-    supabase.from("inventory").select("stock"),
-    supabase.from("orders").select("id", { count: "exact", head: true }),
-    supabase
-      .from("signups")
-      .select("id", { count: "exact", head: true })
-      .is("notified_at", null),
-    supabase
-      .from("orders")
-      .select("id, reference, customer_name, total, currency, status, created_at")
-      .order("created_at", { ascending: false })
-      .limit(5),
-  ]);
-
-  for (const result of [products, inventory, orders, signups, recent]) {
-    if (result.error) console.error("[admin-dashboard]", result.error);
-  }
-
-  // `stockStatus` owns the thresholds (LOW_STOCK_THRESHOLD, 0 = out). Counting
-  // "at or below 5" by hand here would silently drift the day that changes.
-  const lowStockVariants = inventory.error
-    ? null
-    : (inventory.data ?? []).filter((row) => stockStatus(row.stock) !== "in")
-        .length;
-
-  return {
-    publishedProducts: products.error ? null : (products.count ?? 0),
-    lowStockVariants,
-    orders: orders.error ? null : (orders.count ?? 0),
-    pendingSignups: signups.error ? null : (signups.count ?? 0),
-    recentOrders: (recent.data ?? []).map((row) => ({
-      id: row.id,
-      reference: row.reference,
-      customerName: row.customer_name,
-      total: row.total,
-      currency: row.currency,
-      status: row.status,
-      createdAt: row.created_at,
-    })),
-  };
-}
 
 function StatCard({
   label,

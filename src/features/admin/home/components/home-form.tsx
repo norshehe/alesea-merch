@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/features/admin/components/field";
 import { SubmitButton } from "@/features/admin/components/submit-button";
+import { useUnsavedChangesGuard } from "@/features/admin/hooks/use-unsaved-changes-guard";
 import { ImageUploadField } from "@/features/admin/components/image-upload-field";
 import { AssurancesField } from "@/features/admin/home/components/assurances-field";
 import {
@@ -204,11 +205,16 @@ export function HomeForm({ content, defaults }: IHomeFormProps) {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<HomeFormValues, undefined, HomeValues>({
     resolver: zodResolver(homeSchema),
     defaultValues: toDefaults(content),
   });
+
+  // A multi-tab form: unsaved work can sit on a tab that is not even visible,
+  // which makes losing it to a stray reload especially easy. An upload counts
+  // too — the bytes are in Storage but nothing references them until Save.
+  useUnsavedChangesGuard(isDirty || uploading > 0);
 
   const busy = isSubmitting || uploading > 0;
 

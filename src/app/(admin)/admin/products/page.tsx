@@ -14,6 +14,7 @@ import {
 import { EmptyState } from "@/features/admin/components/empty-state";
 import { PageHeader } from "@/features/admin/components/page-header";
 import { ProductReorderButtons } from "@/features/admin/products/components/product-reorder-buttons";
+import { ProductStatusToggle } from "@/features/admin/products/components/product-status-toggle";
 import {
   listAdminProducts,
   type IProductStockSummary,
@@ -21,8 +22,19 @@ import {
 import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
 import { formatPrice } from "@/lib/format";
 
-/** Inventory is deliberately sparse — no rows means "unknown", never "zero". */
-function StockCell({ stock }: { stock: IProductStockSummary }) {
+/**
+ * Inventory is deliberately sparse — no rows means "unknown", never "zero".
+ *
+ * ⚠️ Three states, not two. "Not tracked" is a LOAD-BEARING claim in this app:
+ * it means the storefront will treat every variant as in stock and the
+ * back-in-stock job will skip them. Rendering it because the inventory query
+ * FAILED would tell the operator something specific and false about their
+ * catalogue, so a null roll-up says so instead.
+ */
+function StockCell({ stock }: { stock: IProductStockSummary | null }) {
+  if (stock === null) {
+    return <span className="text-muted-foreground italic">Stock unavailable</span>;
+  }
   if (stock.tracked === 0) {
     return <span className="text-muted-foreground">Not tracked</span>;
   }
@@ -144,13 +156,20 @@ export default async function AdminProductsPage() {
                     />
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      render={<Link href={`/admin/products/${product.id}`} />}
-                    >
-                      Edit
-                    </Button>
+                    <span className="flex items-center justify-end gap-1">
+                      <ProductStatusToggle
+                        id={product.id}
+                        title={product.title}
+                        status={product.status}
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        render={<Link href={`/admin/products/${product.id}`} />}
+                      >
+                        Edit
+                      </Button>
+                    </span>
                   </TableCell>
                 </TableRow>
               ))}

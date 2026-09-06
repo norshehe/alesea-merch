@@ -1,4 +1,4 @@
-import { supabasePublic } from "@/lib/supabase/public";
+import { getSupabasePublic } from "@/lib/supabase/public";
 import { publicUrl } from "@/lib/supabase/storage";
 import type { Database } from "@/lib/supabase/types";
 import type {
@@ -63,7 +63,7 @@ function toImages(
       if (!url) return null;
       const image: ICatalogImage = {
         // `alt` is NOT NULL with a '' default, so an empty string means
-        // "unset" — fall back to the product title, as Contentful did.
+        // "unset" — fall back to the product title.
         alt: row.alt.trim().length > 0 ? row.alt : fallbackAlt,
         url,
         width: row.width ?? 0,
@@ -98,10 +98,9 @@ function normalize(row: IProductRowWithImages): ICatalogProduct {
 }
 
 export async function getProductsFromSupabase(): Promise<ICatalogProduct[]> {
-  // `sort_order` then `title` reproduces Contentful's
-  // `order: ["fields.order", "fields.title"]`, so grid order is unchanged.
+  // `sort_order` then `title` gives editors explicit control over grid order.
   // Images are ordered by `position` inside the embedded relation.
-  const { data, error } = await supabasePublic
+  const { data, error } = await getSupabasePublic()
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("status", "published")
@@ -116,7 +115,7 @@ export async function getProductsFromSupabase(): Promise<ICatalogProduct[]> {
 export async function getProductBySlugFromSupabase(
   slug: string,
 ): Promise<ICatalogProduct | null> {
-  const { data, error } = await supabasePublic
+  const { data, error } = await getSupabasePublic()
     .from("products")
     .select(PRODUCT_SELECT)
     .eq("status", "published")

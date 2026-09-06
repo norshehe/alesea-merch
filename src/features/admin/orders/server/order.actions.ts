@@ -1,7 +1,13 @@
 "use server";
 
 import { requireAdmin } from "@/features/admin/server/auth";
-import { revalidateProduct } from "@/features/admin/server/revalidate";
+import {
+  firstIssue,
+  notWrittenMessage,
+  toActionMessage,
+  type ActionResult,
+} from "@/features/admin/server/action-result";
+import { revalidateStorefrontProducts } from "@/features/admin/server/revalidate";
 import {
   updateOrderNotesSchema,
   updateOrderStatusSchema,
@@ -24,71 +30,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * happened.
  */
 
-type ActionResult<T = undefined> =
-  | ({ ok: true } & (T extends undefined ? object : T))
-  | { ok: false; error: string };
-
-interface IPostgresError {
-  code?: string;
-  message: string;
-}
-
-function isPostgresError(error: unknown): error is IPostgresError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  );
-}
-
 /**
- * Translate a database error into something an operator can act on. The raw
- * error is logged, never returned — it carries SQL and column names.
+ * No constraint map: the only named constraint on `orders` is
+ * `orders_reference_key`, which nothing on this write path can trip — status
+ * and notes are the only writable columns. `sync_order_stock()` raises P0001,
+ * which `toActionMessage` passes through in the trigger's own words.
  */
 function toMessage(error: unknown, fallback: string): string {
-  if (!isPostgresError(error)) return fallback;
-
-  if (error.code === "22P02") return "That order no longer exists.";
-  if (error.code === "23514") {
-    // The stock trigger clamps at zero, so this can only be an orders CHECK.
-    return "That change breaks a database rule on this order.";
-  }
-
-  return fallback;
-}
-
-/** Zod issue → the sentence the operator sees. */
-function firstIssue(issues: { message: string }[]): string {
-  return issues[0]?.message ?? "That change could not be applied.";
-}
-
-/**
- * Storefront pages that render stock for the products in this order.
- *
- * Slugs come from `order_items`, not from a join to `products`: the item row is
- * the durable record and its `product_id` may already be null.
- */
-async function revalidateOrderProducts(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
-  orderId: string,
-) {
-  const { data, error } = await supabase
-    .from("order_items")
-    .select("slug")
-    .eq("order_id", orderId);
-
-  if (error) {
-    // The status change already committed. A stale cache is a nuisance; an
-    // error here would wrongly tell the operator the change failed.
-    console.error("[admin-orders] revalidation lookup failed", error);
-    return;
-  }
-
-  const slugs = new Set(
-    (data ?? []).map((row) => row.slug).filter((slug) => slug.length > 0),
-  );
-  for (const slug of slugs) revalidateProduct(slug);
+  return toActionMessage(error, fallback);
 }
 
 /**
@@ -113,7 +62,10 @@ export async function updateOrderStatus(
   // The client schema is a UX affordance, not a security boundary — re-parse.
   const parsed = updateOrderStatusSchema.safeParse({ orderId, status });
   if (!parsed.success) {
-    return { ok: false, error: firstIssue(parsed.error.issues) };
+    return {
+      ok: false,
+      error: firstIssue(parsed.error.issues, "That change could not be applied."),
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -133,14 +85,20 @@ export async function updateOrderStatus(
       return { ok: true, status: before.status, stockMoved: null };
     }
 
-    const { data: after, error } = await supabase
+    // `.select()` without `.single()`: PostgREST reports NO error when an
+    // UPDATE matches nothing, and an RLS-denied write IS a zero-row write — a
+    // revoked admin row or an expired session would otherwise report success.
+    const { data: rows, error } = await supabase
       .from("orders")
       .update({ status: parsed.data.status })
       .eq("id", parsed.data.orderId)
-      .select("status, stock_reserved")
-      .single();
+      .select("status, stock_reserved");
     if (error) throw error;
+    if (!rows || rows.length === 0) {
+      return { ok: false, error: notWrittenMessage("order") };
+    }
 
+    const after = rows[0];
     const stockMoved =
       before.stock_reserved === after.stock_reserved
         ? null
@@ -151,8 +109,10 @@ export async function updateOrderStatus(
     // Only a transition that crossed into or out of cancelled/refunded touched
     // inventory, and inventory is the ONLY part of an order the storefront
     // renders. pending → shipped changes nothing a customer can see.
+    // Every product page also carries a strip of the other products, so a
+    // stock move is never local to the slugs on this order.
     if (stockMoved !== null) {
-      await revalidateOrderProducts(supabase, parsed.data.orderId);
+      revalidateStorefrontProducts();
     }
 
     return { ok: true, status: after.status, stockMoved };
@@ -180,7 +140,10 @@ export async function updateOrderNotes(
 
   const parsed = updateOrderNotesSchema.safeParse({ orderId, notes });
   if (!parsed.success) {
-    return { ok: false, error: firstIssue(parsed.error.issues) };
+    return {
+      ok: false,
+      error: firstIssue(parsed.error.issues, "That change could not be applied."),
+    };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -190,10 +153,11 @@ export async function updateOrderNotes(
       .from("orders")
       .update({ notes: parsed.data.notes })
       .eq("id", parsed.data.orderId)
-      .select("id")
-      .maybeSingle();
+      .select("id");
     if (error) throw error;
-    if (!data) return { ok: false, error: "That order no longer exists." };
+    if (!data || data.length === 0) {
+      return { ok: false, error: notWrittenMessage("order") };
+    }
 
     return { ok: true };
   } catch (error) {

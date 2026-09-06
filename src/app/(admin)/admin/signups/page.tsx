@@ -12,7 +12,11 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/features/admin/components/empty-state";
 import { PageHeader } from "@/features/admin/components/page-header";
-import { SignupSearch } from "@/features/admin/signups/components/signup-search";
+import {
+  FilterChip,
+  PagerLink,
+} from "@/features/admin/components/list-controls";
+import { ListSearch } from "@/features/admin/components/list-search";
 import {
   countSignups,
   listAdminSignups,
@@ -49,57 +53,6 @@ function signupsHref(
   if (params.page && params.page > 1) search.set("page", String(params.page));
   const query = search.toString();
   return query ? `${base}?${query}` : base;
-}
-
-function FilterChip({
-  href,
-  label,
-  count,
-  active,
-}: {
-  href: string;
-  label: string;
-  count: number;
-  active: boolean;
-}) {
-  return (
-    <Button
-      size="sm"
-      variant={active ? "secondary" : "ghost"}
-      aria-current={active ? "page" : undefined}
-      render={<Link href={href} />}
-    >
-      {label}
-      <span className="text-muted-foreground tabular-nums">{count}</span>
-    </Button>
-  );
-}
-
-/**
- * A disabled anchor is still clickable, so the boundary case renders a real
- * disabled <button> instead of a Link that goes nowhere.
- */
-function PagerLink({
-  href,
-  disabled,
-  children,
-}: {
-  href: string;
-  disabled: boolean;
-  children: React.ReactNode;
-}) {
-  if (disabled) {
-    return (
-      <Button variant="outline" size="sm" disabled>
-        {children}
-      </Button>
-    );
-  }
-  return (
-    <Button variant="outline" size="sm" render={<Link href={href} />}>
-      {children}
-    </Button>
-  );
 }
 
 export default async function AdminSignupsPage({
@@ -171,7 +124,13 @@ export default async function AdminSignupsPage({
             active={status === "notified"}
           />
         </div>
-        <SignupSearch q={query} status={status} />
+        <ListSearch
+          basePath="/admin/signups"
+          q={query}
+          preserve={{ status }}
+          placeholder="Email or source"
+          label="Search signups by email or source"
+        />
       </div>
 
       {/* Two different nothings: nobody has ever signed up, and a filter that

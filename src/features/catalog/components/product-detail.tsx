@@ -15,7 +15,7 @@ interface IProductDetailProps {
   product: ICatalogProduct;
   /**
    * Per-variant stock keyed by `slug|Color|Size`. A missing key means in stock
-   * (Airtable down or row absent); only an explicit 0 is out of stock.
+   * (inventory unavailable or row absent); only an explicit 0 is out of stock.
    */
   stock?: Record<string, number>;
 }

@@ -10,7 +10,7 @@ import { montserrat, playfairDisplay } from "@/lib/fonts";
 import "@/app/globals.css";
 
 // Revalidate site-settings-backed chrome (header/footer) periodically so
-// Contentful edits surface without a redeploy.
+// Supabase edits surface without a redeploy.
 export const revalidate = 60;
 
 export const metadata: Metadata = {

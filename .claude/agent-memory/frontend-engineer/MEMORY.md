@@ -14,3 +14,6 @@ _Reusable implementation patterns and gotchas discovered while building. One lin
 - [Same-page hash nav](project_same-page-hash-nav.md) — on-page anchor CTAs (#shop-grid) use native `<a>`, not next/link; Link skips re-scroll on repeat clicks. Cross-page keeps Link.
 - [Orders admin](project_orders-admin.md) — read + status only; the `sync_order_stock` trigger owns stock, the UI only explains it.
 - [Admin route handler auth](project_admin-route-handler-auth.md) — /api/* is outside proxy.ts; admin handlers must call getAdminUser() and 401 themselves.
+- [Server-authoritative order pricing](project_server-authoritative-order-pricing.md) — `place_order` prices orders itself; client money is ignored, discounts need a server-side promo table.
+- [Storefront resilience contract](project_storefront-resilience-contract.md) — catalog reads throw (ISR caches 404s); chrome/copy/inventory degrade; public client is lazy.
+- [Admin write contract](project_admin-write-contract.md) — zero-row writes, insert-before-delete, server-only byte deletes, whole-storefront revalidation.

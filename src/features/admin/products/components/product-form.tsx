@@ -9,16 +9,11 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Field } from "@/features/admin/components/field";
+import { SelectField } from "@/features/admin/components/select-field";
+import { SwitchField } from "@/features/admin/components/switch-field";
 import { SubmitButton } from "@/features/admin/components/submit-button";
+import { useUnsavedChangesGuard } from "@/features/admin/hooks/use-unsaved-changes-guard";
 import { TagInput } from "@/features/admin/components/tag-input";
 import { ColorsField } from "@/features/admin/components/colors-field";
 import { ImageUploadField } from "@/features/admin/components/image-upload-field";
@@ -43,6 +38,16 @@ const STATUS_LABELS: Record<(typeof PRODUCT_STATUSES)[number], string> = {
   draft: "Draft",
   published: "Published",
 };
+
+const CATEGORY_OPTIONS = PRODUCT_CATEGORIES.map((category) => ({
+  value: category,
+  label: CATEGORY_LABELS[category],
+}));
+
+const STATUS_OPTIONS = PRODUCT_STATUSES.map((status) => ({
+  value: status,
+  label: STATUS_LABELS[status],
+}));
 
 interface IColorRowError {
   name?: { message?: string };
@@ -124,11 +129,16 @@ export function ProductForm({ product }: IProductFormProps) {
     handleSubmit,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<ProductFormValues, undefined, ProductValues>({
     resolver: zodResolver(productSchema),
     defaultValues: toDefaults(product),
   });
+
+  // This is the longest form in the admin; a stray reload used to take all of
+  // it with no warning. Uploads count as unsaved work too — the bytes are in
+  // Storage but nothing references them until Save writes the rows.
+  useUnsavedChangesGuard(isDirty || uploading > 0);
 
   // `useWatch`, not the `watch()` returned by useForm: the latter is a fresh
   // function on every render, which the React Compiler refuses to memoize.
@@ -190,7 +200,6 @@ export function ProductForm({ product }: IProductFormProps) {
             >
               <Input
                 id="title"
-                aria-invalid={errors.title ? true : undefined}
                 disabled={busy}
                 {...titleField}
               />
@@ -209,71 +218,30 @@ export function ProductForm({ product }: IProductFormProps) {
             >
               <Input
                 id="slug"
-                aria-invalid={errors.slug ? true : undefined}
                 disabled={busy}
                 {...slugField}
               />
             </Field>
 
-            <Field
+            <SelectField
+              control={control}
+              name="category"
               label="Category"
-              htmlFor="category"
+              options={CATEGORY_OPTIONS}
               required
+              disabled={busy}
               error={errors.category?.message}
-            >
-              {/* Base UI Select is not a native input — it must be driven by a
-                  Controller. `register()` here yields a silently empty field. */}
-              <Controller
-                control={control}
-                name="category"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
-                  >
-                    <SelectTrigger id="category" className="w-full" disabled={busy}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRODUCT_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {CATEGORY_LABELS[category]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+            />
 
-            <Field
+            <SelectField
+              control={control}
+              name="status"
               label="Status"
-              htmlFor="status"
+              options={STATUS_OPTIONS}
               required
+              disabled={busy}
               error={errors.status?.message}
-            >
-              <Controller
-                control={control}
-                name="status"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
-                  >
-                    <SelectTrigger id="status" className="w-full" disabled={busy}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PRODUCT_STATUSES.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+            />
 
             <Field
               label="Price"
@@ -292,7 +260,6 @@ export function ProductForm({ product }: IProductFormProps) {
                 min={0}
                 step={1}
                 inputMode="numeric"
-                aria-invalid={errors.price ? true : undefined}
                 disabled={busy}
                 {...register("price")}
               />
@@ -309,7 +276,6 @@ export function ProductForm({ product }: IProductFormProps) {
                 id="currency"
                 maxLength={3}
                 autoCapitalize="characters"
-                aria-invalid={errors.currency ? true : undefined}
                 disabled={busy}
                 {...register("currency")}
               />
@@ -326,33 +292,19 @@ export function ProductForm({ product }: IProductFormProps) {
                 type="number"
                 step={1}
                 inputMode="numeric"
-                aria-invalid={errors.sortOrder ? true : undefined}
                 disabled={busy}
                 {...register("sortOrder")}
               />
             </Field>
 
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Coming soon</span>
-              <div className="flex items-center gap-2">
-                {/* Switch is a Base UI primitive, not a checkbox input. */}
-                <Controller
-                  control={control}
-                  name="comingSoon"
-                  render={({ field }) => (
-                    <Switch
-                      id="comingSoon"
-                      checked={field.value}
-                      disabled={busy}
-                      onCheckedChange={(checked) => field.onChange(checked)}
-                    />
-                  )}
-                />
-                <label htmlFor="comingSoon" className="text-muted-foreground text-xs">
-                  Teaser only — shows a notify-me form instead of a price.
-                </label>
-              </div>
-            </div>
+            <SwitchField
+              control={control}
+              name="comingSoon"
+              label="Coming soon"
+              description="Teaser only — shows a notify-me form instead of a price."
+              disabled={busy}
+              error={errors.comingSoon?.message}
+            />
           </div>
         </section>
 

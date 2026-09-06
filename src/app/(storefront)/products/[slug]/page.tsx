@@ -13,8 +13,8 @@ import { formatPrice } from "@/lib/format";
 import { getInventory } from "@/features/catalog/server/inventory";
 import { variantKey } from "@/features/catalog/lib/stock";
 
-// Revalidate remote (Contentful) product data periodically so edits surface
-// without a redeploy, while still prerendering pages statically.
+// Revalidate Supabase product data periodically so edits surface without a
+// redeploy, while still prerendering pages statically.
 export const revalidate = 60;
 
 interface IProductPageProps {
@@ -54,9 +54,18 @@ export default async function ProductPage({ params }: IProductPageProps) {
 
   // Slice the inventory map to just this product's variants, as a plain
   // serializable record keyed by `slug|Color|Size` for the client component.
+  //
+  // Empty axes collapse to a single "" entry, exactly as `buildGridStock` does:
+  // a product with no size axis (or no colour axis) is keyed `slug|Colour|` in
+  // `inventory_by_slug`. Iterating the raw arrays would skip that key entirely,
+  // and `ProductDetail` reads a missing key as "in stock" — so the grid would
+  // show "Sold out" while the detail page still allowed an add to bag.
+  const colors = product.colors.length > 0 ? product.colors : [{ name: "" }];
+  const sizes = product.sizes.length > 0 ? product.sizes : [""];
+
   const stock: Record<string, number> = {};
-  for (const color of product.colors) {
-    for (const size of product.sizes) {
+  for (const color of colors) {
+    for (const size of sizes) {
       const key = variantKey(product.slug, color.name, size);
       const value = inventory.get(key);
       if (value !== undefined) stock[key] = value;

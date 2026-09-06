@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/features/admin/server/auth";
 import {
+  firstIssue,
+  toActionMessage,
+  type ActionResult,
+  type ConstraintMessages,
+} from "@/features/admin/server/action-result";
+import {
   homeSchema,
   type HomeFormValues,
   type HomeValues,
@@ -19,37 +25,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * `features/admin/server/revalidate.ts` to keep this feature self-contained.
  */
 
-type ActionResult = { ok: true } | { ok: false; error: string };
-
-interface IPostgresError {
-  code?: string;
-  message: string;
-}
-
-function isPostgresError(error: unknown): error is IPostgresError {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof (error as { message: unknown }).message === "string"
-  );
-}
+const HOME_CONSTRAINTS: ConstraintMessages = {
+  home_assurances_shape: "Every assurance needs both a title and a body.",
+};
 
 function toMessage(error: unknown, fallback: string): string {
-  if (!isPostgresError(error)) return fallback;
-
-  if (error.code === "23514") {
-    if (error.message.includes("home_assurances_shape")) {
-      return "Every assurance needs both a title and a body.";
-    }
-    return "That change breaks a database rule — check the assurances.";
-  }
-
-  return fallback;
-}
-
-function firstIssue(issues: { message: string }[]): string {
-  return issues[0]?.message ?? "Some fields need attention.";
+  return toActionMessage(error, fallback, HOME_CONSTRAINTS);
 }
 
 /** `_path` (upload) / `_url` (external) pair. The path wins on render. */
@@ -129,7 +110,10 @@ export async function saveHomeContent(
     if (error) throw error;
 
     if (!data) {
-      // Defensive: no seeded row (an unmigrated or manually emptied database).
+      // Zero rows. Usually means no seeded row (an unmigrated or manually
+      // emptied database) — but it is ALSO what an RLS-denied update looks
+      // like, since PostgREST reports no error for one. The insert below
+      // separates the two: RLS refuses it loudly, a missing row accepts it.
       const { error: insertError } = await supabase
         .from("home_content")
         .insert({ id: 1, ...row });

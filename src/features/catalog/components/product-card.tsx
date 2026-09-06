@@ -19,7 +19,7 @@ interface IProductCardProps {
   soldOutSizes?: string[];
 }
 
-/** Shared cover: Contentful image when present, else the `dc-stripe` placeholder. */
+/** Shared cover: product image when present, else the `dc-stripe` placeholder. */
 function CardCover({ product }: { product: ICatalogProduct }) {
   const cover = product.images[0];
   if (cover) {

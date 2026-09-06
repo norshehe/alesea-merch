@@ -5,6 +5,7 @@ import {
   type IHomeContent,
 } from "@/lib/supabase/home/homeClient";
 import type { IShopCategory } from "@/lib/supabase/types/shopCategory/response";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 
 /**
  * Hardcoded homepage defaults, mirroring the original design copy and imagery.
@@ -85,6 +86,13 @@ function assurances(value: IAssurance[], fallback: IAssurance[]): IAssurance[] {
  * Supabase URL when present, else the original CDN image (or null).
  */
 export async function getHomeContent(): Promise<IHomeContent> {
+  // Editorial copy is presentational — a missing config degrades to the design
+  // defaults rather than failing the home page.
+  if (!isSupabaseConfigured()) {
+    console.warn("[home] Supabase is not configured — using design defaults.");
+    return HOME_FALLBACK;
+  }
+
   let remote: IHomeContent | null = null;
   try {
     remote = await getHomeContentFromSupabase();

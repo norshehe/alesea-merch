@@ -32,6 +32,14 @@ export interface IAdminCategory {
   isActive: boolean;
 }
 
+/** Never returns — the call site reads better as an expression. */
+function requireStorageUrl(path: string): never {
+  console.error("[admin-categories] no public URL for image", path);
+  throw new Error(
+    "Storage is not configured, so this category's image cannot be edited safely.",
+  );
+}
+
 function toCategory(row: {
   id: string;
   label: string;
@@ -49,20 +57,23 @@ function toCategory(row: {
     label: row.label,
     eyebrow: row.eyebrow,
     filterKey: row.filter_key,
-    // `ImageUploadField` needs a URL to render, so a path with no configured
-    // Storage host is treated as "no upload" rather than a broken <Image>.
-    image:
-      row.image_path && uploadedUrl
-        ? {
-            url: uploadedUrl,
-            path: row.image_path,
-            // `shop_categories` has no alt column; the label is the accessible
-            // name of the tile on the storefront.
-            alt: row.label,
-            width: 0,
-            height: 0,
-          }
-        : null,
+    // ⚠️ Never report an existing `image_path` as "no upload". This value
+    // round-trips: the form posts back what it was given and `toRow` writes
+    // `image_path: values.image[0]?.path ?? null`, so a dropped row would clear
+    // the column on the next save and strand its bytes. `publicUrl` returns
+    // null only when the Storage host is unconfigured — an environment fault,
+    // surfaced as one rather than swallowed.
+    image: row.image_path
+      ? {
+          url: uploadedUrl ?? requireStorageUrl(row.image_path),
+          path: row.image_path,
+          // `shop_categories` has no alt column; the label is the accessible
+          // name of the tile on the storefront.
+          alt: row.label,
+          width: 0,
+          height: 0,
+        }
+      : null,
     imageUrl: row.image_url ?? "",
     resolvedImage: resolveImageUrl(row.image_path, row.image_url),
     sortOrder: row.sort_order,

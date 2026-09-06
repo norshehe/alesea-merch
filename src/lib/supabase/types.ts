@@ -588,6 +588,10 @@ export type Database = {
         Args: { p_direction: number; p_order_id: string }
         Returns: undefined
       }
+      assert_order_stock_available: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       is_admin: { Args: never; Returns: boolean }
       is_assurance_array: { Args: { v: Json }; Returns: boolean }
       is_color_array: { Args: { v: Json }; Returns: boolean }
@@ -598,8 +602,15 @@ export type Database = {
         Returns: {
           order_id: string
           reference: string
+          item_count: number
+          subtotal: number
+          shipping: number
+          discount: number
+          total: number
+          currency: string
         }[]
       }
+      release_order_stock_on_delete: { Args: never; Returns: unknown }
     }
     Enums: {
       category_filter_key:

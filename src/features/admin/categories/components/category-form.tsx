@@ -8,16 +8,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Field } from "@/features/admin/components/field";
+import { SelectField } from "@/features/admin/components/select-field";
+import { SwitchField } from "@/features/admin/components/switch-field";
 import { SubmitButton } from "@/features/admin/components/submit-button";
+import { useUnsavedChangesGuard } from "@/features/admin/hooks/use-unsaved-changes-guard";
 import { ImageUploadField } from "@/features/admin/components/image-upload-field";
 import {
   CATEGORY_FILTER_KEYS,
@@ -28,6 +23,11 @@ import {
 } from "@/features/admin/categories/schemas/category.schema";
 import { saveCategory } from "@/features/admin/categories/server/category.actions";
 import type { IAdminCategory } from "@/features/admin/categories/server/category.queries";
+
+const FILTER_KEY_OPTIONS = CATEGORY_FILTER_KEYS.map((key) => ({
+  value: key,
+  label: CATEGORY_FILTER_KEY_LABELS[key],
+}));
 
 interface ICategoryFormProps {
   /** `null` when creating. */
@@ -74,11 +74,15 @@ export function CategoryForm({ category }: ICategoryFormProps) {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors, isDirty, isSubmitting },
   } = useForm<CategoryFormValues, undefined, CategoryValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: toDefaults(category),
   });
+
+  // An upload counts as unsaved work: the bytes are in Storage but nothing
+  // references them until Save writes `image_path`.
+  useUnsavedChangesGuard(isDirty || uploading > 0);
 
   // `useWatch`, not the `watch()` returned by useForm: the latter is a fresh
   // function on every render, which the React Compiler refuses to memoize.
@@ -129,7 +133,6 @@ export function CategoryForm({ category }: ICategoryFormProps) {
             >
               <Input
                 id="label"
-                aria-invalid={errors.label ? true : undefined}
                 disabled={busy}
                 {...register("label")}
               />
@@ -143,47 +146,21 @@ export function CategoryForm({ category }: ICategoryFormProps) {
             >
               <Input
                 id="eyebrow"
-                aria-invalid={errors.eyebrow ? true : undefined}
                 disabled={busy}
                 {...register("eyebrow")}
               />
             </Field>
 
-            <Field
+            <SelectField
+              control={control}
+              name="filterKey"
               label="Filter key"
-              htmlFor="filterKey"
+              options={FILTER_KEY_OPTIONS}
               required
               hint="Which catalog filter the tile opens."
+              disabled={busy}
               error={errors.filterKey?.message}
-            >
-              {/* Base UI Select is not a native input — it must be driven by a
-                  Controller. `register()` here yields a silently empty field. */}
-              <Controller
-                control={control}
-                name="filterKey"
-                render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(value) => field.onChange(value)}
-                  >
-                    <SelectTrigger
-                      id="filterKey"
-                      className="w-full"
-                      disabled={busy}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORY_FILTER_KEYS.map((key) => (
-                        <SelectItem key={key} value={key}>
-                          {CATEGORY_FILTER_KEY_LABELS[key]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </Field>
+            />
 
             <Field
               label="Sort order"
@@ -196,36 +173,19 @@ export function CategoryForm({ category }: ICategoryFormProps) {
                 type="number"
                 step={1}
                 inputMode="numeric"
-                aria-invalid={errors.sortOrder ? true : undefined}
                 disabled={busy}
                 {...register("sortOrder")}
               />
             </Field>
 
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Visible</span>
-              <div className="flex items-center gap-2">
-                {/* Switch is a Base UI primitive, not a checkbox input. */}
-                <Controller
-                  control={control}
-                  name="isActive"
-                  render={({ field }) => (
-                    <Switch
-                      id="isActive"
-                      checked={field.value}
-                      disabled={busy}
-                      onCheckedChange={(checked) => field.onChange(checked)}
-                    />
-                  )}
-                />
-                <label
-                  htmlFor="isActive"
-                  className="text-muted-foreground text-xs"
-                >
-                  Hidden categories stay here but disappear from the home page.
-                </label>
-              </div>
-            </div>
+            <SwitchField
+              control={control}
+              name="isActive"
+              label="Visible"
+              description="Hidden categories stay here but disappear from the home page."
+              disabled={busy}
+              error={errors.isActive?.message}
+            />
           </div>
         </section>
 
@@ -265,7 +225,6 @@ export function CategoryForm({ category }: ICategoryFormProps) {
               type="url"
               inputMode="url"
               placeholder="https://…"
-              aria-invalid={errors.imageUrl ? true : undefined}
               disabled={busy}
               {...register("imageUrl")}
             />

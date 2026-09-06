@@ -10,7 +10,7 @@ const SHOP_LINK =
 const COL_HEADING =
   "mb-1 text-[11px] tracking-[0.2em] uppercase text-[#8B8170]";
 
-// TODO: move to a Contentful siteSettings field once a phone field exists.
+// TODO: move to a `site_settings` column once a phone field exists.
 const PHONE = "(+63) 968 869 8918";
 
 interface ISiteFooterProps {
