@@ -3,19 +3,30 @@
 import { useSyncExternalStore } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart.store";
 import { NavLink } from "@/components/layout/nav-link";
+import { NavDropdown } from "@/components/layout/nav-dropdown";
+import { MobileNav } from "@/components/layout/mobile-nav";
+import { MAIN_NAV } from "@/components/layout/main-nav";
 import type { INavLink } from "@/lib/contentful/siteSettings/siteSettingsClient";
 import type { IImage } from "@/lib/contentful/types/common";
 
+/**
+ * Top-level nav item styling, mirroring alesea.co's header: uppercase, 14px,
+ * `#14201b`, 20px of horizontal padding, and a 2px underline that appears on
+ * hover/focus (the main site also bolds the label on hover).
+ */
 const NAV_LINK =
-  "text-[11.5px] tracking-[0.18em] uppercase transition-colors";
+  "relative px-5 py-1 text-[14px] tracking-[0.04em] uppercase text-[#14201b] transition-[font-weight,color] hover:font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal after:absolute after:inset-x-5 after:-bottom-0.5 after:h-0.5 after:origin-left after:scale-x-0 after:bg-current after:transition-transform hover:after:scale-x-100";
 
 const noop = () => () => {};
 
 interface ISiteHeaderProps {
   logo?: IImage | null;
+  /**
+   * Storefront-specific links from Contentful, appended after the mirrored
+   * alesea.co items. Empty by default — the main nav lives in `MAIN_NAV`.
+   */
   navLinks: INavLink[];
   bookNowLabel: string;
   bookNowUrl: string;
@@ -41,31 +52,17 @@ export function SiteHeader({
   );
 
   return (
-    <header className="sticky top-0 z-60 flex h-[74px] items-center justify-between border-b border-line bg-cream/[0.88] px-5 backdrop-blur-[14px] sm:px-10">
-      <nav className="flex flex-1 items-center gap-5 sm:gap-[30px]">
-        <NavLink
-          href="https://alesea.co"
-          className={`${NAV_LINK} -ml-2 flex min-h-11 min-w-11 items-center justify-center gap-1.5 text-stone hover:text-ink sm:ml-0 sm:min-w-0 sm:justify-start`}
-          aria-label="Back to alesea.co"
-        >
-          <ArrowLeft className="size-3.5" strokeWidth={1.6} aria-hidden />
-          <span className="hidden sm:inline">Back to Alesea</span>
-        </NavLink>
-        {navLinks.map((link) => (
-          <NavLink
-            key={`${link.label}-${link.href}`}
-            href={link.href}
-            className={`${NAV_LINK} hidden text-stone hover:text-ink sm:inline`}
-          >
-            {link.label}
-          </NavLink>
-        ))}
-      </nav>
+    <header className="sticky top-0 z-60 flex h-[74px] items-center gap-4 border-b border-line bg-cream/[0.88] px-5 backdrop-blur-[14px] sm:px-10">
+      <MobileNav
+        extraLinks={navLinks}
+        bookNowLabel={bookNowLabel}
+        bookNowUrl={bookNowUrl}
+      />
 
       <Link
         href="/"
-        className="flex flex-col items-center leading-none"
-        aria-label="Alesea Lifestyle, home"
+        className="flex shrink-0 flex-col leading-none"
+        aria-label="Alesea Lifestyle, shop home"
       >
         {logo?.width ? (
           <Image
@@ -79,35 +76,57 @@ export function SiteHeader({
           />
         ) : (
           <>
-            <span className="font-serif text-[25px] tracking-[0.42em] [text-indent:0.42em] text-teal">
+            <span className="font-serif text-[22px] tracking-[0.4em] [text-indent:0.4em] text-teal">
               ALESEA
             </span>
-            <span className="mt-[5px] text-[8.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-teal">
+            <span className="mt-[4px] text-[7.5px] tracking-[0.5em] [text-indent:0.5em] uppercase text-teal">
               Lifestyle
             </span>
           </>
         )}
       </Link>
 
-      <div className="flex flex-1 items-center justify-end gap-4 sm:gap-[26px]">
-        <NavLink
-          href={bookNowUrl}
-          newTab
-          className={`${NAV_LINK} rounded-full border border-teal bg-teal px-5 py-2 text-white transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal`}
-        >
-          {bookNowLabel}
-        </NavLink>
+      {/* Mirrored alesea.co nav — hidden on mobile, where MobileNav takes over. */}
+      <nav className="hidden flex-1 items-center lg:flex" aria-label="Main">
+        {MAIN_NAV.map((item) =>
+          item.children ? (
+            <NavDropdown key={item.label} item={item} triggerClass={NAV_LINK} />
+          ) : (
+            <NavLink key={item.label} href={item.href} className={NAV_LINK}>
+              {item.label}
+            </NavLink>
+          ),
+        )}
+        {navLinks.map((link) => (
+          <NavLink
+            key={`${link.label}-${link.href}`}
+            href={link.href}
+            className={NAV_LINK}
+          >
+            {link.label}
+          </NavLink>
+        ))}
+      </nav>
+
+      <div className="flex flex-1 items-center justify-end gap-4 sm:gap-[26px] lg:flex-none">
         <button
           type="button"
           onClick={toggleCart}
           aria-label={`Open bag, ${mounted ? count : 0} items`}
-          className={`${NAV_LINK} relative flex items-center gap-[9px] text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal`}
+          className="relative flex items-center gap-[9px] text-[11.5px] tracking-[0.18em] uppercase text-ink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal"
         >
           <span>Bag</span>
           <span className="inline-flex h-[21px] min-w-[21px] items-center justify-center rounded-[11px] bg-teal px-1.5 text-[11px] tracking-normal text-white">
             {mounted ? count : 0}
           </span>
         </button>
+        <NavLink
+          href={bookNowUrl}
+          newTab
+          className="hidden rounded-full border border-teal bg-teal px-7 py-2.5 text-[13px] tracking-[0.06em] uppercase text-white transition-[filter] hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal sm:inline-block"
+        >
+          {bookNowLabel}
+        </NavLink>
       </div>
     </header>
   );

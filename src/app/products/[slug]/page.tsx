@@ -66,7 +66,7 @@ export default async function ProductPage({ params }: IProductPageProps) {
   return (
     <div className="px-6 pt-[34px] pb-24 sm:px-14">
       <Link
-        href="/#shop-grid"
+        href="/products"
         className="mb-[30px] inline-block text-[11.5px] tracking-[0.16em] uppercase text-stone transition-colors hover:text-ink"
       >
         ← Back to shop
