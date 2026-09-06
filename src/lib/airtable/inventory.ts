@@ -79,8 +79,10 @@ export async function getInventory(): Promise<Map<string, number>> {
       const data = (await response.json()) as IAirtableListResponse;
       for (const record of data.records ?? []) {
         const { Slug, Color, Size, Stock } = record.fields ?? {};
-        if (!Slug || !Color || !Size || typeof Stock !== "number") continue;
-        inventory.set(variantKey(Slug, Color, Size), Stock);
+        if (!Slug || typeof Stock !== "number") continue;
+        // Blank Color/Size are valid: a product with no variants (or only one
+        // axis) is keyed with empty strings, mirroring how lookups fall back.
+        inventory.set(variantKey(Slug, Color ?? "", Size ?? ""), Stock);
       }
       offset = data.offset;
     } while (offset);
