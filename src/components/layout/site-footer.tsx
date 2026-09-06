@@ -34,7 +34,7 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
             {settings.footerBlurb}
           </p>
           <Link
-            href="/#shop-grid"
+            href="/products"
             className="mt-5 inline-block rounded-full border border-foam bg-foam px-6 py-3 text-[11px] tracking-[0.18em] uppercase text-teal transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foam"
           >
             Shop the Collection
@@ -43,7 +43,10 @@ export function SiteFooter({ settings }: ISiteFooterProps) {
 
         <div className="flex flex-col gap-[13px]">
           <span className={COL_HEADING}>Shop</span>
-          <Link href="/#shop-grid" className={SHOP_LINK}>
+          <Link href="/products" className={SHOP_LINK}>
+            All Products
+          </Link>
+          <Link href="/products?category=tees" className={SHOP_LINK}>
             Tees
           </Link>
           <Link href={`/products/${WEEKENDER_TOTE_SLUG}`} className={SHOP_LINK}>

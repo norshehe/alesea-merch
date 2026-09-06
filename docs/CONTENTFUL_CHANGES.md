@@ -107,6 +107,11 @@ After edits, **publish** entries A, B, C.
 | `editorialBody` | *(clear — section is now a tee gallery)* |
 | `editorialQuote` | *(clear)* |
 
+> Verified against the live entry on 2026-08-27: `carryHeading` already reads
+> `Your beach day, fully packed.` and `heroBody` / `assurances` are already applied.
+> Still outstanding on this entry: `heroSecondaryCta` (`Lookbook`), `editorialBody`
+> and `editorialQuote` are all still populated and need clearing.
+
 `assurances` new value (JSON — 4 items, order matters, icons map by index):
 ```json
 [
@@ -129,7 +134,7 @@ Then **publish** the homepage entry.
 
 | Field | Current | New value |
 | --- | --- | --- |
-| `navLinks` | `[{Shop}, {Villas & Suites}, {About}]` | `[]` — remove all header nav links (per "no need to mimic the main site's nav"). Keep just `[{ "label": "Shop", "href": "/" }]` if you prefer a single Shop link. |
+| `navLinks` | `[{Shop}, {Villas & Suites}, {About}]` | `[]` — remove all header nav links (per "no need to mimic the main site's nav"). Keep just `[{ "label": "Shop", "href": "/products" }]` if you prefer a single Shop link (this is now the in-code default, pointing at the all-products page). |
 | `footerBlurb` | `Beachfront villas in La Union — and the goods to remember them by.` | `We can't wait to see you in these.` — the footer tagline is CMS-driven; set this so it matches the new footer mock. |
 | `freeShipThreshold` | `2500` | `2500` — no change (already correct). |
 

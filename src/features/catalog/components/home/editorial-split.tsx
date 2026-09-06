@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { IHomeContent } from "@/features/catalog/server/home";
 import type { ICatalogProduct } from "@/features/catalog/types";
@@ -101,15 +102,14 @@ export function EditorialSplit({ content, tees }: IEditorialSplitProps) {
             {active.name}
           </p>
         ) : null}
-        {/* Native anchor (not next/link): same-page jump to the shop grid.
-            App Router <Link> won't re-scroll when the hash is already
-            #shop-grid, so a plain <a> is used for reliable anchor scrolling. */}
-        <a
-          href="#shop-grid"
+        {/* Full listing lives on its own route, so this is a real navigation
+            rather than a jump back up to the home grid. */}
+        <Link
+          href="/products"
           className="mt-[34px] self-start rounded-full border border-teal bg-teal px-8 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
         >
           {content.editorialCta}
-        </a>
+        </Link>
       </div>
     </section>
   );

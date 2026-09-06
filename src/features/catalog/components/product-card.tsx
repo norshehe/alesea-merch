@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -16,6 +15,8 @@ interface IProductCardProps {
   product: ICatalogProduct;
   /** True when every variant is out of stock — disables quick-add, shows a label. */
   soldOut?: boolean;
+  /** Sizes that are out of stock in every colour — rendered as disabled pills. */
+  soldOutSizes?: string[];
 }
 
 /** Shared cover: Contentful image when present, else the `dc-stripe` placeholder. */
@@ -41,7 +42,11 @@ function CardCover({ product }: { product: ICatalogProduct }) {
   );
 }
 
-export function ProductCard({ product, soldOut = false }: IProductCardProps) {
+export function ProductCard({
+  product,
+  soldOut = false,
+  soldOutSizes = [],
+}: IProductCardProps) {
   // Coming-soon products have no price / add-to-bag. Per the client brief the
   // card carries an inline email input + "Notify Me" button. The card itself is
   // NOT a full-card <Link> (a form can't be nested in an <a>); the image and
@@ -86,124 +91,84 @@ export function ProductCard({ product, soldOut = false }: IProductCardProps) {
     );
   }
 
-  return <ActiveProductCard product={product} soldOut={soldOut} />;
+  return (
+    <ActiveProductCard
+      product={product}
+      soldOut={soldOut}
+      soldOutSizes={soldOutSizes}
+    />
+  );
 }
 
-/** Purchasable card: quick-add "+" with an inline size picker for multi-size products. */
+/**
+ * Purchasable card.
+ *
+ * Multi-size products show their size row up-front (tapping a size adds it to
+ * the bag) — customers were not discovering sizes when they were hidden behind
+ * the quick-add button. Single-size products keep the one-tap "+" overlay
+ * instead, since a row of one pill carries no information.
+ *
+ * Not a full-card <Link>: the size pills are buttons, and buttons cannot be
+ * nested inside an anchor. The image and the name are the links to the PDP.
+ */
 function ActiveProductCard({
   product,
   soldOut,
+  soldOutSizes,
 }: {
   product: ICatalogProduct;
   soldOut: boolean;
+  soldOutSizes: string[];
 }) {
   const add = useCartStore((s) => s.add);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const imageRef = useRef<HTMLDivElement>(null);
   const multiSize = product.sizes.length > 1;
-
-  // Dismiss the size picker on Escape or an outside click (in addition to
-  // re-clicking the trigger or selecting a size).
-  useEffect(() => {
-    if (!pickerOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPickerOpen(false);
-    };
-    const onPointer = (e: PointerEvent) => {
-      if (imageRef.current && !imageRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onPointer);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onPointer);
-    };
-  }, [pickerOpen]);
 
   const addToBag = (size: string) => {
     add(product, product.colors[0]?.name ?? "", size, 1);
     toast("Added to bag");
-    setPickerOpen(false);
   };
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (soldOut) return;
-    // Single-size products add in one click; otherwise reveal the size picker.
-    if (multiSize) {
-      setPickerOpen((open) => !open);
-      return;
-    }
     addToBag(product.sizes[0] ?? "");
   };
 
-  const stop = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  };
-
   return (
-    <Link
-      href={`/products/${product.slug}`}
-      className="group flex flex-col rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal"
-    >
-      <div ref={imageRef} className="dc-stripe relative aspect-4/5 overflow-hidden">
-        <CardCover product={product} />
+    <div className="flex flex-col">
+      {/* The link fills the image box; the quick-add button is a sibling laid
+          over it, so the button is never nested inside the anchor. */}
+      <div className="dc-stripe relative aspect-4/5 overflow-hidden">
+        <Link
+          href={`/products/${product.slug}`}
+          className="group absolute inset-0 z-10 rounded-[2px] focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-teal"
+          aria-label={product.name}
+        >
+          <CardCover product={product} />
+        </Link>
         {soldOut ? (
-          <span className="absolute top-3 left-3 bg-ink/85 px-2.5 py-1 text-[9.5px] tracking-[0.16em] uppercase text-white">
+          <span className="pointer-events-none absolute top-3 left-3 z-20 bg-ink/85 px-2.5 py-1 text-[9.5px] tracking-[0.16em] uppercase text-white">
             Sold out
           </span>
         ) : null}
-        <button
-          type="button"
-          onClick={handleQuickAdd}
-          disabled={soldOut}
-          aria-disabled={soldOut}
-          aria-expanded={multiSize && !soldOut ? pickerOpen : undefined}
-          aria-label={
-            soldOut
-              ? `${product.name} is sold out`
-              : multiSize
-                ? pickerOpen
-                  ? `Close size picker for ${product.name}`
-                  : `Choose a size for ${product.name}`
+        {/* Single-size products keep the one-tap quick-add over the image. */}
+        {!multiSize ? (
+          <button
+            type="button"
+            onClick={handleQuickAdd}
+            disabled={soldOut}
+            aria-disabled={soldOut}
+            aria-label={
+              soldOut
+                ? `${product.name} is sold out`
                 : `Quick add ${product.name} to bag`
-          }
-          title={soldOut ? "Sold out" : multiSize ? "Choose a size" : "Quick add"}
-          className={`absolute right-3 bottom-3 z-20 flex size-11 items-center justify-center rounded-full bg-foam text-ink shadow-[0_4px_14px_rgba(42,38,32,0.16)] transition-colors hover:bg-teal hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:bg-foam disabled:text-ink/40 disabled:shadow-none disabled:hover:bg-foam disabled:hover:text-ink/40 ${
-            pickerOpen ? "bg-teal text-white" : ""
-          }`}
-        >
-          <Plus
-            className={`size-[18px] transition-transform ${pickerOpen ? "rotate-45" : ""}`}
-            strokeWidth={1.6}
-          />
-        </button>
-
-        {pickerOpen && !soldOut ? (
-          // Anchored above the trigger (bottom-14) so the "×" stays clickable.
-          <div
-            onClick={stop}
-            className="absolute inset-x-0 bottom-14 z-10 flex flex-wrap items-center justify-center gap-2 bg-cream/95 px-3 py-3.5 shadow-[0_-4px_14px_rgba(42,38,32,0.12)]"
+            }
+            title={soldOut ? "Sold out" : "Quick add"}
+            className="absolute right-3 bottom-3 z-20 flex size-11 items-center justify-center rounded-full bg-foam text-ink shadow-[0_4px_14px_rgba(42,38,32,0.16)] transition-colors hover:bg-teal hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal disabled:cursor-not-allowed disabled:bg-foam disabled:text-ink/40 disabled:shadow-none disabled:hover:bg-foam disabled:hover:text-ink/40"
           >
-            {product.sizes.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={(e) => {
-                  stop(e);
-                  addToBag(s);
-                }}
-                aria-label={`Add ${product.name}, size ${s}, to bag`}
-                className={sizePillClass()}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+            <Plus className="size-[18px]" strokeWidth={1.6} />
+          </button>
         ) : null}
       </div>
 
@@ -211,7 +176,12 @@ function ActiveProductCard({
         <span className="text-[10.5px] tracking-[0.2em] uppercase text-clay">
           {CATEGORY_LABELS[product.category]}
         </span>
-        <span className="font-serif text-[19px] text-teal">{product.name}</span>
+        <Link
+          href={`/products/${product.slug}`}
+          className="font-serif text-[19px] text-teal underline-offset-4 hover:underline"
+        >
+          {product.name}
+        </Link>
         <div className="mt-0.5 flex items-center justify-between">
           <span className="text-[15px] text-[#5A5247]">
             {formatPrice(product.price, product.currency)}
@@ -227,7 +197,40 @@ function ActiveProductCard({
             ))}
           </div>
         </div>
+
+        {multiSize ? (
+          <div className="mt-2.5">
+            <span className="text-[10px] tracking-[0.18em] uppercase text-clay">
+              {soldOut ? "Sold out" : `Select ${product.sizeLabel.toLowerCase()}`}
+            </span>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {product.sizes.map((size) => {
+                const out = soldOut || soldOutSizes.includes(size);
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => addToBag(size)}
+                    disabled={out}
+                    aria-disabled={out}
+                    aria-label={
+                      out
+                        ? `${product.name}, size ${size}, is sold out`
+                        : `Add ${product.name}, size ${size}, to bag`
+                    }
+                    title={out ? `Size ${size} is sold out` : `Add size ${size}`}
+                    className={`${sizePillClass({ out })} ${
+                      out ? "cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </div>
-    </Link>
+    </div>
   );
 }

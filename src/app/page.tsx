@@ -28,7 +28,11 @@ export default async function HomePage() {
     <>
       <Hero content={content} />
       <Assurances content={content} />
-      <ProductGrid products={products} stock={gridStock} />
+      <ProductGrid
+        products={products}
+        stock={gridStock}
+        action={{ href: "/products", label: "View all products" }}
+      />
       <EditorialSplit content={content} tees={tees} />
       <CarryFeature content={content} />
     </>

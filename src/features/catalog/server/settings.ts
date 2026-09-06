@@ -25,8 +25,8 @@ export const SETTINGS_FALLBACK: ISiteSettings = {
   contactEmail: "hello@alesea.co",
   contactAddress: "BGC, Taguig, PH",
   contactSocial: "Instagram · Facebook",
-  // Header nav intentionally empty — the storefront links back to alesea.co via
-  // the "Back to Alesea" strip instead of surfacing the main-site nav here.
+  // Empty by default: the header nav mirrors alesea.co from `MAIN_NAV` in code.
+  // Contentful `navLinks` are rendered as extra trailing items on top of that.
   navLinks: [],
   bookNowLabel: "Book Now",
   bookNowUrl: "https://book.alesea.co/all-listings",
