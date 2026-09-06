@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 interface ISubmitButtonProps {
   /** In-flight state. Drives both the spinner and `disabled`. */
   pending?: boolean;
+  /**
+   * Blocks submission for a reason other than being in-flight — e.g. the
+   * inventory grid has nothing dirty to save. Never shows the spinner.
+   */
+  disabled?: boolean;
   children: React.ReactNode;
   /** Label swapped in while pending, e.g. "Saving…". Defaults to `children`. */
   pendingLabel?: React.ReactNode;
@@ -22,6 +27,7 @@ interface ISubmitButtonProps {
  */
 export function SubmitButton({
   pending = false,
+  disabled = false,
   children,
   pendingLabel,
   className,
@@ -33,7 +39,7 @@ export function SubmitButton({
       type="submit"
       size={size}
       variant={variant}
-      disabled={pending}
+      disabled={pending || disabled}
       aria-busy={pending || undefined}
       className={cn(className)}
     >
