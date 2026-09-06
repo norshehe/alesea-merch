@@ -15,7 +15,9 @@
 create sequence public.order_ref_seq;
 
 create function public.next_order_ref() returns text
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 declare
   n        bigint := (nextval('public.order_ref_seq') * 2654435761) % 33554432;
   alphabet constant text := '0123456789ABCDEFGHJKMNPQRSTVWXYZ';  -- Crockford: no I, L, O, U
@@ -110,7 +112,9 @@ create index order_items_product_idx on public.order_items (product_id);
 -- fail-open rule the whole storefront depends on.
 create function public.apply_order_stock(p_order_id uuid, p_direction integer)
 returns void
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 declare it record;
 begin
   for it in
@@ -134,7 +138,7 @@ create function public.place_order(p_order jsonb, p_items jsonb)
 returns table (order_id uuid, reference text)
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $$
 declare
   v_id    uuid;
@@ -144,7 +148,7 @@ declare
   v_pid   uuid;
   v_stock integer;
 begin
-  insert into orders (
+  insert into public.orders (
     customer_name, email, phone,
     address_line1, address_line2, city, province, postal_code, country,
     delivery_method, delivery_label, payment_method,
@@ -161,12 +165,12 @@ begin
     (p_order ->> 'total')::int, coalesce(p_order ->> 'currency', 'PHP'),
     p_order ->> 'promo_code',
     true
-  ) returning orders.id, orders.reference into v_id, v_ref;
+  ) returning public.orders.id, public.orders.reference into v_id, v_ref;
 
   for it in select * from jsonb_array_elements(p_items) loop
-    select p.id into v_pid from products p where p.slug = it ->> 'slug';
+    select p.id into v_pid from public.products p where p.slug = it ->> 'slug';
 
-    insert into order_items (
+    insert into public.order_items (
       order_id, product_id, slug, name, color, size,
       variant_label, quantity, unit_price, line_total, position
     ) values (
@@ -179,7 +183,7 @@ begin
     if v_pid is not null then
       -- Lock the row so two concurrent checkouts cannot both pass the check.
       select stock into v_stock
-        from inventory
+        from public.inventory
        where product_id = v_pid
          and color = coalesce(it ->> 'color', '')
          and size = coalesce(it ->> 'size', '')
@@ -195,7 +199,7 @@ begin
     i := i + 1;
   end loop;
 
-  perform apply_order_stock(v_id, -1);
+  perform public.apply_order_stock(v_id, -1);
 
   return query select v_id, v_ref;
 end $$;
@@ -206,7 +210,9 @@ end $$;
 -- Accepting a pending order changes nothing: the reservation simply becomes the
 -- sale.
 create function public.sync_order_stock() returns trigger
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 declare
   was_released boolean := old.status in ('cancelled', 'refunded');
   is_released  boolean := new.status in ('cancelled', 'refunded');

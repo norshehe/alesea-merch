@@ -80,13 +80,7 @@ create table public.home_content (
 
   updated_at           timestamptz not null default now(),
 
-  constraint home_assurances_shape check (
-    jsonb_typeof(assurances) = 'array' and not exists (
-      select 1 from jsonb_array_elements(assurances) e
-      where jsonb_typeof(e.value -> 'title') <> 'string'
-         or jsonb_typeof(e.value -> 'body') <> 'string'
-    )
-  )
+  constraint home_assurances_shape check (public.is_assurance_array(assurances))
 );
 
 create trigger home_content_touch before update on public.home_content

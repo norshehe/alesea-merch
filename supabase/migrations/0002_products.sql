@@ -12,6 +12,35 @@
 -- `inventory_orphans` view surfaces drift created by editing a product after
 -- the fact. Normalizing instead would break the cart's persisted variant
 -- strings in every customer's localStorage — not worth it.
+
+-- CHECK constraints cannot contain subqueries, but they MAY call a function
+-- that does. Same pattern as is_link_array() in 0001.
+create function public.is_color_array(v jsonb) returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select jsonb_typeof(v) = 'array' and not exists (
+    select 1 from jsonb_array_elements(v) e
+    where jsonb_typeof(e.value) <> 'object'
+       or jsonb_typeof(e.value -> 'name') <> 'string'
+       or jsonb_typeof(e.value -> 'hex') <> 'string'
+       or (e.value ->> 'hex') !~ '^#[0-9A-Fa-f]{6}$'
+  )
+$$;
+
+create function public.is_assurance_array(v jsonb) returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select jsonb_typeof(v) = 'array' and not exists (
+    select 1 from jsonb_array_elements(v) e
+    where jsonb_typeof(e.value -> 'title') <> 'string'
+       or jsonb_typeof(e.value -> 'body') <> 'string'
+  )
+$$;
+
 create table public.products (
   id          uuid primary key default gen_random_uuid(),
   slug        text not null,
@@ -32,16 +61,7 @@ create table public.products (
 
   constraint products_slug_key unique (slug),
   constraint products_slug_format check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  constraint products_colors_is_array check (jsonb_typeof(colors) = 'array'),
-  constraint products_colors_shape check (
-    not exists (
-      select 1 from jsonb_array_elements(colors) e
-      where jsonb_typeof(e.value) <> 'object'
-         or jsonb_typeof(e.value -> 'name') <> 'string'
-         or jsonb_typeof(e.value -> 'hex') <> 'string'
-         or (e.value ->> 'hex') !~ '^#[0-9A-Fa-f]{6}$'
-    )
-  ),
+  constraint products_colors_shape check (public.is_color_array(colors)),
   -- Teaser products are the only ones allowed a zero price: the UI replaces
   -- price + Add to Bag with a "Notify Me" form when coming_soon is true.
   constraint products_price_or_coming_soon check (coming_soon or price > 0)
@@ -106,7 +126,9 @@ create trigger inventory_touch before update on public.inventory
 -- Reject stock rows for options the product does not declare. This is what
 -- would have caught the Weekender Tote row carrying a bottle's Clay/750ml.
 create function public.inventory_options_exist() returns trigger
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 declare p record;
 begin
   select sizes, colors into p from public.products where id = new.product_id;
@@ -134,7 +156,8 @@ create trigger inventory_options_exist_trg
 -- Drift created by renaming a colour/size AFTER its stock rows exist. The admin
 -- renders this as a warning banner; the trigger above cannot catch it because
 -- the write is to `products`, not `inventory`.
-create view public.inventory_orphans as
+create view public.inventory_orphans
+with (security_invoker = true) as
 select i.*, p.slug, p.title
 from public.inventory i
 join public.products p on p.id = i.product_id
@@ -143,7 +166,8 @@ where (i.size <> '' and not (i.size = any (p.sizes)))
         select 1 from jsonb_array_elements(p.colors) e where e.value ->> 'name' = i.color));
 
 -- Read shape for getInventory(): the storefront keys stock by slug, not id.
-create view public.inventory_by_slug as
+create view public.inventory_by_slug
+with (security_invoker = true) as
 select p.slug, i.color, i.size, i.stock
 from public.inventory i
 join public.products p on p.id = i.product_id;

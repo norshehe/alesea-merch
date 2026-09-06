@@ -27,8 +27,13 @@ create type order_status as enum (
   'pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'refunded'
 );
 
+-- `set search_path = ''` on every function: Supabase's security advisor flags
+-- a mutable search_path as a privilege-escalation vector. All object
+-- references below are therefore schema-qualified.
 create function public.touch_updated_at() returns trigger
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
@@ -36,7 +41,10 @@ end $$;
 
 -- Shape guard for the {label, href} arrays used by nav and social links.
 create function public.is_link_array(v jsonb) returns boolean
-language sql immutable as $$
+language sql
+immutable
+set search_path = ''
+as $$
   select jsonb_typeof(v) = 'array' and not exists (
     select 1 from jsonb_array_elements(v) e
     where jsonb_typeof(e.value -> 'label') <> 'string'
