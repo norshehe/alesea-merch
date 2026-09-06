@@ -3,8 +3,6 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      // Contentful asset CDN (product/content imagery)
-      { protocol: "https", hostname: "images.ctfassets.net" },
       // Supabase Storage — public `media` bucket (product + content imagery)
       {
         protocol: "https",

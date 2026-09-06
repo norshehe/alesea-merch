@@ -133,7 +133,10 @@ export function CheckoutView() {
       deliveryLabel,
       paymentMethod: "Cash on delivery",
       lines: lines.map((line) => ({
+        slug: line.slug,
         name: line.name,
+        color: line.color,
+        size: line.size,
         variant: `${line.color} · ${line.size}`,
         quantity: line.quantity,
         unitPrice: line.price,

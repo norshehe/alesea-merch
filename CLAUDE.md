@@ -1,6 +1,8 @@
 # Alesea Merch — Frontend
 
-A Next.js storefront for Alesea merch, backed by **Contentful** as the headless content & product source. No auth yet (guest browsing/checkout).
+A Next.js storefront for Alesea merch, backed by **Supabase** (Postgres + Storage + Auth) as the single source of truth for products, inventory, orders, signups and site content. Guest browsing/checkout — customers never authenticate. An internal admin lives at `/admin` behind Supabase Auth.
+
+> **Migrated off Contentful + Airtable.** Do not reintroduce either. If you find a reference to them in older docs or skills, it is stale.
 
 > **Next.js 16** — this version has breaking changes vs. older training data (async `params`/`searchParams`, caching, App Router APIs). When unsure about a Next.js API, read the relevant guide in `node_modules/next/dist/docs/` before writing code. Heed deprecation notices.
 
@@ -18,15 +20,17 @@ Never mix lanes. `/sc:implement` is not a substitute for `feature-scaffolder` + 
 
 ### Key Layers
 
-- **Content / data**: Contentful (Content Delivery API, Preview API for drafts). Single client in `src/lib/contentful/index.ts`. **Never** call `createClient` elsewhere.
-- **Data layer**: Two-file pattern per content type / domain:
-  - `*Client.ts` — raw Contentful calls that **normalize** entries to `I*` shapes (never leak raw Contentful `Entry` objects to the UI).
-  - `*Handler.ts` — React Query hooks wrapping the client (`useGet*`). Export a `*Keys` query-key factory.
-  - Shared helpers (`toImage`, `ICollection<T>`) in `src/lib/contentful/types/common.ts`.
+- **Content / data**: Supabase Postgres. Migrations in `supabase/migrations/`; generated types in `src/lib/supabase/types.ts` (regenerate after every migration).
+- **Three clients, and picking the wrong one breaks things silently:**
+  - `src/lib/supabase/public.ts` — anon, **cookie-less**, for every storefront read. It is a plain `createClient`, NOT `@supabase/ssr`, because `createServerClient` needs `cookies()`, and calling that in the storefront root layout opts the whole app into dynamic rendering and silently kills ISR. Nothing errors; the site just stops being static.
+  - `src/lib/supabase/admin.ts` — service role, `server-only`. Bypasses RLS. Only for order/signup writes and the cron. Never import it outside server code.
+  - `@supabase/ssr` cookie-bound clients — `/admin` routes only.
+- **Data layer**: `*Client.ts` per domain under `src/lib/supabase/`, normalizing rows to `I*` shapes. Components never see raw rows.
+- **RLS is the security boundary**, not application code. Anon can read published products and site content; it has **no policy at all** on `orders` and `signups`, so a leaked anon key cannot export customer data. Run `get_advisors` after any schema change.
 - **State**: Zustand stores (`src/store/*.store.ts`) for global client state (cart). React Query for server state. **Cart is client state — never put product fetches in Zustand.**
 - **Forms**: React Hook Form + Zod schemas (in `src/features/*/schemas/`), resolved via `@hookform/resolvers`.
 - **UI**: Shadcn/Radix primitives in `src/components/ui/`, Lucide icons, Sonner toasts, Tailwind 4 tokens.
-- **Auth**: None yet. Do not add auth libraries or guards unless explicitly asked.
+- **Auth**: Supabase Auth (magic link, invite-only) guards `/admin` only. Customers never log in — do not add auth to the storefront. Route protection lives in `src/proxy.ts` (Next 16 renamed `middleware.ts` → `proxy.ts`).
 
 ### Project Structure
 
@@ -38,7 +42,8 @@ src/
 ├── components/ui/        # Shadcn/Radix base components
 ├── components/layout/    # Header, footer, navigation (create as needed)
 ├── hooks/                # Global hooks (useDebounce, etc.)
-├── lib/contentful/       # Contentful client, *Client/*Handler per domain, types/
+├── lib/supabase/         # public/admin clients, *Client per domain, generated types
+├── proxy.ts              # Next 16 route protection (was middleware.ts)
 ├── lib/utils.ts          # cn() and shared helpers
 └── store/                # Zustand stores (cart)
 ```
@@ -46,24 +51,25 @@ src/
 ### Conventions
 
 - **Path alias**: `@/*` → `./src/*`
-- **Type naming**: Interfaces prefixed with `I` (`IProduct`, `ICartLine`). Contentful entry skeletons suffixed `Skeleton` (`ProductSkeleton`).
-- **Content types**: organized in `lib/contentful/types/<domain>/` with `response.ts` (skeleton + normalized `I*`), `query.ts`, and shared `common.ts`.
-- **Normalize at the boundary**: clients map Contentful `Entry<Skeleton>` → `I*`. Components only ever see normalized shapes.
+- **Type naming**: Interfaces prefixed with `I` (`IProduct`, `ICartLine`).
+- **Domain types**: organized in `lib/supabase/types/<domain>/` with the normalized `I*` shapes, plus shared helpers in `types/common.ts`. Generated row types live in `lib/supabase/types.ts` — never hand-edit them.
+- **Normalize at the boundary**: clients map database rows → `I*`. Components only ever see normalized shapes. `ICatalogProduct`, `ISiteSettings`, `IHomeContent` and `getInventory()`'s `Map<"slug|color|size", number>` are a frozen contract — changing them means touching every component.
 - **Query keys**: every handler exports a `*Keys` factory; never inline string arrays in `useQuery`.
-- **Server vs Client components**: default to Server Components. Add `"use client"` only for interactivity (cart, forms, hooks). Fetch Contentful in Server Components or React Query handlers — never call clients from the server *and* duplicate in the client.
+- **Server vs Client components**: default to Server Components. Add `"use client"` only for interactivity (cart, forms, hooks). Fetch data in Server Components — never duplicate a server fetch in the client.
 - **Error/empty/loading states**: every data surface needs all three (Skeleton, empty state, error message). Use `Skeleton` from `components/ui`.
 - **Feedback**: Sonner (`toast`) for transient feedback only (item added to cart, form submitted). Form validation errors render inline via RHF + the form field components.
-- **Images**: always `next/image`. Contentful URLs are normalized to `https:` by `toImage`.
+- **Images**: always `next/image`, served from the public `media` bucket in Supabase Storage. Storage returns no dimensions, so `width`/`height`/`alt` are Postgres columns — capture dimensions at upload. Any new image host must be added to `next.config.ts` `remotePatterns` or it 500s.
 - **Money**: format with `Intl.NumberFormat` using the product's `currency`. Never hardcode `$`.
 
 ### Environment Variables
 
 See `.env.example` (copy to `.env.local`):
 
-- `NEXT_PUBLIC_CONTENTFUL_SPACE_ID` / `CONTENTFUL_DELIVERY_TOKEN` — Contentful Delivery API
-- `CONTENTFUL_PREVIEW_TOKEN` / `NEXT_PUBLIC_CONTENTFUL_PREVIEW` — draft preview
-- `NEXT_PUBLIC_CONTENTFUL_ENVIRONMENT` — Contentful environment (default `master`)
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — public; RLS is what protects the data
+- `SUPABASE_SERVICE_ROLE_KEY` — **secret**, bypasses RLS. Server-only; never prefix with `NEXT_PUBLIC_`
 - `NEXT_PUBLIC_SITE_URL` — canonical site URL
+- `SENDGRID_*` — back-in-stock notification email
+- `CRON_SECRET` / `BACK_IN_STOCK_SEND` — cron auth and the live-send arming flag (see `docs/BACK_IN_STOCK_NOTIFICATIONS.md`)
 
 ---
 
@@ -76,7 +82,7 @@ Consult the relevant skill **before writing code** to ensure pattern consistency
 | Skill                          | Purpose                                                               | Trigger when user says…                                                    |
 | ------------------------------ | --------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `feature-scaffolder`           | Scaffold a feature module dir (components, schemas, hooks, constants)  | "create a new feature for X", "scaffold feature", "add a module for Y"      |
-| `contentful-domain-scaffolder` | Generate Client + Handler + types for a new Contentful content type    | "add data for X", "connect the Y content type", "fetch Z from Contentful"   |
+| `contentful-domain-scaffolder` | **RETIRED** — generates Contentful clients for a codebase that has none. Do not invoke. Add a `*Client.ts` under `src/lib/supabase/` instead. | — |
 | `product-listing-page`         | Build a product grid/catalog page with search, filters, pagination    | "create a product list", "build the catalog page", "show all products"      |
 | `form-builder`                 | Build a form/dialog with Zod + React Hook Form + error handling        | "create a form for X", "add a newsletter form", "build a checkout form"     |
 | `cart-store`                   | Add to / extend the Zustand cart store and cart UI                     | "add to cart", "build the cart", "track cart state", "cart drawer"          |
@@ -99,14 +105,14 @@ When building a full feature end-to-end, chain skills in dependency order based 
 **Full feature build** (user says "build me the X feature"):
 
 1. `feature-scaffolder` — create the directory structure
-2. `contentful-domain-scaffolder` — generate client, handler, and types for the content type
+2. Add a `*Client.ts` under `src/lib/supabase/` normalizing rows to `I*` shapes (write a migration first if the table is new)
 3. `product-listing-page` — build the listing page (if the feature lists content)
 4. `form-builder` — build forms/dialogs (if the feature has forms)
 5. `cart-store` — only if cart interaction is involved
 
 **Partial chains** (match to the user's actual request):
 
-- "Add data for X" → `contentful-domain-scaffolder` only
+- "Add data for X" → migration in `supabase/migrations/`, regenerate types, then a `*Client.ts`
 - "Create a page to list X" → `product-listing-page` (assumes the content type exists)
 - "Add a form for X" → `form-builder`
 - "Add to cart" → `cart-store`
