@@ -73,3 +73,108 @@ export async function createAirtableRecord(
 
   return { id };
 }
+
+interface IAirtableListResponse<T> {
+  records?: { id: string; fields?: T }[];
+  offset?: string;
+}
+
+/** A single Airtable record, normalized to `{ id, fields }`. */
+export interface IAirtableRecord<T> {
+  id: string;
+  fields: T;
+}
+
+/**
+ * List every record in a table, following pagination.
+ *
+ * @param table Table name to read.
+ * @param params Extra query params (e.g. `filterByFormula`, `fields[]`).
+ * @throws Error with the HTTP status on non-2xx, so callers decide whether an
+ * outage is fatal (the notification job aborts) or ignorable (catalog reads).
+ */
+export async function listAirtableRecords<T>(
+  table: string,
+  params: Record<string, string> = {},
+): Promise<IAirtableRecord<T>[]> {
+  if (!API_KEY || !BASE_ID) {
+    throw new Error("Airtable is not configured.");
+  }
+
+  const records: IAirtableRecord<T>[] = [];
+  let offset: string | undefined;
+
+  do {
+    const url = new URL(
+      `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}`,
+    );
+    url.searchParams.set("pageSize", "100");
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
+    if (offset) url.searchParams.set("offset", offset);
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${API_KEY}` },
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        `Airtable list failed (${response.status}): ${response.statusText}`,
+      );
+    }
+
+    const data = (await response.json()) as IAirtableListResponse<T>;
+    for (const record of data.records ?? []) {
+      records.push({ id: record.id, fields: (record.fields ?? {}) as T });
+    }
+    offset = data.offset;
+  } while (offset);
+
+  return records;
+}
+
+/**
+ * Patch fields on a single record. `typecast: true` matches
+ * {@link createAirtableRecord} so single-selects auto-create options.
+ *
+ * @throws Error on non-2xx — notably when a field does not exist in the table,
+ * which is how the notification job detects a missing `Notified At` column
+ * before it emails anyone.
+ */
+export async function updateAirtableRecord(
+  id: string,
+  fields: Record<string, unknown>,
+  table: string = ORDERS_TABLE,
+): Promise<void> {
+  if (!API_KEY || !BASE_ID) {
+    throw new Error("Airtable is not configured.");
+  }
+
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}/${id}`;
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ fields, typecast: true }),
+  });
+
+  if (!response.ok) {
+    let detail = response.statusText;
+    try {
+      const body = (await response.json()) as IAirtableErrorBody;
+      if (typeof body.error === "string") {
+        detail = body.error;
+      } else if (body.error?.message) {
+        detail = body.error.message;
+      }
+    } catch {
+      // Response body was not JSON — fall back to statusText.
+    }
+    throw new Error(`Airtable update failed (${response.status}): ${detail}`);
+  }
+}
