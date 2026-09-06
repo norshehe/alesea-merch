@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Montserrat, Playfair_Display } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/app/providers/query-provider";
 import { SettingsProvider } from "@/app/providers/settings-provider";
@@ -7,19 +6,8 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { CartDrawer } from "@/features/cart/components/cart-drawer";
 import { getSiteSettings } from "@/features/catalog/server/settings";
-import "./globals.css";
-
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-const playfairDisplay = Playfair_Display({
-  variable: "--font-playfair-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+import { montserrat, playfairDisplay } from "@/lib/fonts";
+import "@/app/globals.css";
 
 // Revalidate site-settings-backed chrome (header/footer) periodically so
 // Contentful edits surface without a redeploy.
