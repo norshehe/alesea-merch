@@ -11,7 +11,7 @@ import type { IShopCategory } from "@/lib/supabase/types/shopCategory/response";
  * Used per-field when Supabase is unreachable or a field is empty, so the
  * home page renders identically to before the data-source swap.
  */
-const HOME_FALLBACK: IHomeContent = {
+export const HOME_FALLBACK: IHomeContent = {
   heroEyebrow: "The Alesea Shop · La Union",
   heroHeading: "Carry the coast home.",
   heroBody:

@@ -13,3 +13,4 @@ _Reusable implementation patterns and gotchas discovered while building. One lin
 - [Admin route group](project_admin-route-group.md) — no root `app/layout.tsx`; `(storefront)` and `(admin)` are two sibling root layouts, fonts shared via `@/lib/fonts`.
 - [Same-page hash nav](project_same-page-hash-nav.md) — on-page anchor CTAs (#shop-grid) use native `<a>`, not next/link; Link skips re-scroll on repeat clicks. Cross-page keeps Link.
 - [Orders admin](project_orders-admin.md) — read + status only; the `sync_order_stock` trigger owns stock, the UI only explains it.
+- [Admin route handler auth](project_admin-route-handler-auth.md) — /api/* is outside proxy.ts; admin handlers must call getAdminUser() and 401 themselves.
