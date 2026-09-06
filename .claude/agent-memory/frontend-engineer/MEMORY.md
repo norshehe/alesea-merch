@@ -9,4 +9,5 @@ _Reusable implementation patterns and gotchas discovered while building. One lin
 - [Cross-site nav](project_cross-site-nav.md) — header/footer surface alesea.co nav + Book Now + socials from siteSettings; NavLink + isExternalHref decide internal/external & tab.
 - [Brand system](project_brand-system.md) — storefront mirrors alesea.co: Playfair Display + Montserrat, exact brand hexes, teal pill CTAs; swatch hexes are product colours, not chrome.
 - [PDP size guide](project_pdp-size-guide.md) — apparel size-guide table on PDP, gated to `category === "tees"`; static typed constants structured for a later Contentful move.
+- [Admin route group](project_admin-route-group.md) — no root `app/layout.tsx`; `(storefront)` and `(admin)` are two sibling root layouts, fonts shared via `@/lib/fonts`.
 - [Same-page hash nav](project_same-page-hash-nav.md) — on-page anchor CTAs (#shop-grid) use native `<a>`, not next/link; Link skips re-scroll on repeat clicks. Cross-page keeps Link.
