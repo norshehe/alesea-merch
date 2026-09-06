@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Boxes, Mail, Package, ShoppingBag } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
@@ -12,6 +11,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PageHeader } from "@/features/admin/components/page-header";
+import { OrderStatusBadge } from "@/features/admin/orders/components/order-status-badge";
+import type { OrderStatus } from "@/features/admin/orders/schemas/order.schema";
 import { EmptyState } from "@/features/admin/components/empty-state";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { stockStatus } from "@/features/catalog/lib/stock";
@@ -23,7 +24,7 @@ interface IRecentOrder {
   customerName: string;
   total: number;
   currency: string;
-  status: string;
+  status: OrderStatus;
   createdAt: string;
 }
 
@@ -188,14 +189,17 @@ export default async function AdminDashboardPage() {
               <TableBody>
                 {data.recentOrders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="font-medium">
-                      {order.reference}
+                    <TableCell>
+                      <Link
+                        href={`/admin/orders/${order.id}`}
+                        className="focus-visible:ring-ring/50 rounded font-medium underline-offset-4 outline-none hover:underline focus-visible:ring-3"
+                      >
+                        {order.reference}
+                      </Link>
                     </TableCell>
                     <TableCell>{order.customerName}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize">
-                        {order.status}
-                      </Badge>
+                      <OrderStatusBadge status={order.status} />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {DATE_FORMAT.format(new Date(order.createdAt))}

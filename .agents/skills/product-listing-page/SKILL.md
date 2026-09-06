@@ -5,17 +5,17 @@ description: Build a product grid / catalog listing page with responsive cards, 
 
 # Product Listing Page Builder
 
-Generate a responsive listing page (product grid by default) wired to a Contentful domain handler, with search, pagination, and all three data states.
+Generate a responsive listing page (product grid by default) wired to a Supabase server-side data function, with search, pagination, and all three data states.
 
 ## Prerequisites
 
-The content type's data layer must exist (`useGetXs` handler). If it doesn't, run `contentful-domain-scaffolder` first.
+The domain's data layer must exist (a `*Client.ts` under `src/lib/supabase/` normalizing rows to `I*` shapes, surfaced by a `server/*.ts` function). If it doesn't, write the migration and client first.
 
 Read these references before building:
 
 - `page-patterns` — grids, skeletons, empty/error states
 - `nextjs-performance-ui` — Server vs Client split, `next/image`, Core Web Vitals
-- `src/lib/contentful/product/productHandler.ts` — the handler to consume
+- `src/features/catalog/server/catalog.ts` — `getCatalog()` / `getProduct()`, the server functions to consume
 
 ## Structure
 
@@ -50,4 +50,4 @@ const formatPrice = (price: number, currency: string) =>
 ## After building
 
 - Confirm `pnpm exec tsc --noEmit` passes.
-- Note that the page needs valid Contentful env vars to render real data; without them it shows the error state.
+- Note that the page needs valid Supabase env vars to render real data; without them `getCatalog()` returns `[]` and the empty state shows.
