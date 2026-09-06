@@ -5,7 +5,7 @@ import { EditorialSplit } from "@/features/catalog/components/home/editorial-spl
 import { CarryFeature } from "@/features/catalog/components/home/carry-feature";
 import { getHomeContent } from "@/features/catalog/server/home";
 import { getCatalog } from "@/features/catalog/server/catalog";
-import { getInventory } from "@/lib/airtable/inventory";
+import { getInventory } from "@/features/catalog/server/inventory";
 import { buildGridStock } from "@/features/catalog/lib/build-grid-stock";
 
 // Revalidate Contentful-backed content periodically so edits surface without a

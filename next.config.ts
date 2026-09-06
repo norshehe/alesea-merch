@@ -5,7 +5,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       // Contentful asset CDN (product/content imagery)
       { protocol: "https", hostname: "images.ctfassets.net" },
-      // Alesea villa photography used in the storefront design
+      // Supabase Storage — public `media` bucket (product + content imagery)
+      {
+        protocol: "https",
+        hostname: "wsdahucinbnzvuoluqft.supabase.co",
+        pathname: "/storage/v1/object/public/media/**",
+      },
+      // Alesea villa photography used in the storefront design (HOME_FALLBACK)
       { protocol: "https", hostname: "lirp.cdn-website.com" },
     ],
   },

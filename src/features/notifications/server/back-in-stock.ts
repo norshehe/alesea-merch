@@ -5,7 +5,7 @@ import {
   updateAirtableRecord,
   SIGNUPS_TABLE,
 } from "@/lib/airtable";
-import { getInventory } from "@/lib/airtable/inventory";
+import { getInventory } from "@/features/catalog/server/inventory";
 import { isSendGridConfigured, sendEmail } from "@/lib/sendgrid";
 import { getCatalog } from "@/features/catalog/server/catalog";
 import { stockStatus, variantKey } from "@/features/catalog/lib/stock";

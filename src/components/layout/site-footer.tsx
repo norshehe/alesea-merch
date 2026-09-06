@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { NavLink } from "@/components/layout/nav-link";
 import { WEEKENDER_TOTE_SLUG } from "@/features/catalog/constants/products";
-import type { ISiteSettings } from "@/lib/contentful/siteSettings/siteSettingsClient";
+import type { ISiteSettings } from "@/lib/supabase/siteSettings/siteSettingsClient";
 
 const ALESEA_LINK =
   "text-left text-sm font-normal text-[#D9CEBC] transition-colors hover:text-white";

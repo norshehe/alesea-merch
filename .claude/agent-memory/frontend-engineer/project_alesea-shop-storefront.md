@@ -1,11 +1,13 @@
 ---
 name: alesea-shop-storefront
-description: The Alesea Shop storefront reads from Contentful (source of truth) with the local catalog as a typed per-field fallback. Server Components fetch; cart stays client/sync.
+description: The Alesea Shop storefront READ PATH now reads from Supabase (source of truth, no local catalog fallback); content singletons keep per-field design fallbacks. Server Components fetch; cart stays client/sync.
 metadata:
   type: project
 ---
 
-The storefront (home, product detail, cart, checkout) was built from the design at `docs/design/Alesea-Shop.dc.html`, then wired to **Contentful as the source of truth** with the local catalog as the offline/empty fallback (migration done 2026-06-21).
+The storefront (home, product detail, cart, checkout) was built from the design at `docs/design/Alesea-Shop.dc.html`, wired to Contentful in 2026-06, then **migrated to Supabase as the source of truth on 2026-09-06** (read path only — see [[supabase-read-path-migration]]).
+
+**Current data layer:** `src/lib/supabase/{product,siteSettings,home}/*Client.ts` + `types/{common,shopCategory}`; server modules unchanged in shape at `src/features/catalog/server/{catalog,home,settings,inventory}.ts`. The `I*` interfaces (`ICatalogProduct`, `ISiteSettings`, `IHomeContent`, `IShopCategory`, `IImage`) are byte-identical to the Contentful era — that is why zero UI components changed across two data-source swaps. The historical Contentful notes below still describe the architecture accurately; substitute Supabase for Contentful.
 
 **Why:** The Contentful model (`product`, `shopCategory`, `homePage`, `siteSettings`) is now populated and published in space `qrm1ftb7ac4w` / env `master`. Goal was a data-source swap with zero visual change and a real fallback so the site renders identically if Contentful is unreachable.
 
@@ -18,4 +20,4 @@ The storefront (home, product detail, cart, checkout) was built from the design 
 - **Images:** render Contentful images with `next/image` when present (`product.images[0]` etc.), else keep the `dc-stripe` placeholder. Host `images.ctfassets.net` is allowlisted in `next.config.ts`; `toImages`/`assetUrl` normalize protocol-relative `//` URLs to `https:`.
 - **Money:** `formatPrice(amount, currency)` from `@/lib/format`. Product price uses `product.currency`; cart/checkout totals use the settings currency. Never hardcode ₱/$.
 
-**Gotchas:** Guard `product.colors[0]`/`sizes[0]` with `?.` — Contentful products may have empty arrays. Don't re-sort the catalog client-side; `getProductsFromContentful` sorts server-side via `order: ["fields.order", "fields.title"]`.
+**Gotchas:** Guard `product.colors[0]`/`sizes[0]` with `?.` — products may have empty arrays. Don't re-sort the catalog client-side; `getProductsFromSupabase` sorts server-side (`sort_order`, then `title`), mirroring the old Contentful `order` clause. There is NO local `PRODUCTS` fallback any more — a Supabase failure yields an empty grid on purpose (ISR keeps serving the last good render).

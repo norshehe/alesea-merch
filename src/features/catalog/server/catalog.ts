@@ -1,53 +1,45 @@
 import "server-only";
 import {
-  getProductBySlugFromContentful,
-  getProductsFromContentful,
-} from "@/lib/contentful/product/productClient";
-import {
-  PRODUCTS,
-  getRelatedProducts as getRelatedFromList,
-} from "@/features/catalog/constants/products";
+  getProductBySlugFromSupabase,
+  getProductsFromSupabase,
+} from "@/lib/supabase/product/productClient";
+import { getRelatedProducts as getRelatedFromList } from "@/features/catalog/lib/related";
 import type { ICatalogProduct } from "@/features/catalog/types";
 
 /**
  * Catalog data access for Server Components.
  *
- * Contentful is the source of truth; the local `PRODUCTS` catalog is the
- * offline / empty fallback. If Contentful throws OR returns nothing, the site
- * renders identically to the local catalog (a `console.warn` flags the fallback).
+ * Supabase is the ONLY source of truth — there is deliberately no hardcoded
+ * fallback catalog. A stale in-code catalog would serve wrong prices and
+ * phantom products, which is worse than an empty grid; and ISR already keeps
+ * serving the last good render when a revalidation fetch fails. Resilience
+ * belongs in the caching layer, not in duplicated product data.
  */
 
-/** All products — Contentful first, local catalog as fallback. */
+/** All published products, ordered by `sort_order` then title. */
 export async function getCatalog(): Promise<ICatalogProduct[]> {
   try {
-    const products = await getProductsFromContentful();
-    if (products.length > 0) return products;
-    console.warn(
-      "[catalog] Contentful returned no products — falling back to local catalog.",
-    );
+    return await getProductsFromSupabase();
   } catch (error) {
-    console.warn(
-      "[catalog] Contentful product fetch failed — falling back to local catalog.",
-      error,
-    );
+    console.error("[catalog] Supabase product fetch failed.", error);
+    return [];
   }
-  return PRODUCTS;
 }
 
-/** A single product by slug — Contentful first, local catalog as fallback. */
+/** A single published product by slug — `undefined` lets callers `notFound()`. */
 export async function getProduct(
   slug: string,
 ): Promise<ICatalogProduct | undefined> {
   try {
-    const product = await getProductBySlugFromContentful(slug);
-    if (product) return product;
+    const product = await getProductBySlugFromSupabase(slug);
+    return product ?? undefined;
   } catch (error) {
-    console.warn(
-      `[catalog] Contentful fetch failed for slug "${slug}" — falling back to local catalog.`,
+    console.error(
+      `[catalog] Supabase fetch failed for slug "${slug}".`,
       error,
     );
+    return undefined;
   }
-  return PRODUCTS.find((p) => p.slug === slug);
 }
 
 /**
@@ -59,6 +51,5 @@ export function getRelated(
   catalog: ICatalogProduct[],
   limit = 4,
 ): ICatalogProduct[] {
-  const pool = catalog.length > 0 ? catalog : PRODUCTS;
-  return getRelatedFromList(product, limit, pool);
+  return getRelatedFromList(product, limit, catalog);
 }

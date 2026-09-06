@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getCatalog } from "@/features/catalog/server/catalog";
-import { getInventory } from "@/lib/airtable/inventory";
+import { getInventory } from "@/features/catalog/server/inventory";
 import { buildGridStock } from "@/features/catalog/lib/build-grid-stock";
 import { ProductGrid } from "@/features/catalog/components/product-grid";
 import { CategoryFilter } from "@/features/catalog/components/category-filter";

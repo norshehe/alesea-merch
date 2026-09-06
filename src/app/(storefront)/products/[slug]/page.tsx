@@ -10,7 +10,7 @@ import {
 import { ProductDetail } from "@/features/catalog/components/product-detail";
 import { SizeGuide } from "@/features/catalog/components/size-guide";
 import { formatPrice } from "@/lib/format";
-import { getInventory } from "@/lib/airtable/inventory";
+import { getInventory } from "@/features/catalog/server/inventory";
 import { variantKey } from "@/features/catalog/lib/stock";
 
 // Revalidate remote (Contentful) product data periodically so edits surface

@@ -8,8 +8,8 @@ import { NavLink } from "@/components/layout/nav-link";
 import { NavDropdown } from "@/components/layout/nav-dropdown";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { MAIN_NAV } from "@/components/layout/main-nav";
-import type { INavLink } from "@/lib/contentful/siteSettings/siteSettingsClient";
-import type { IImage } from "@/lib/contentful/types/common";
+import type { INavLink } from "@/lib/supabase/siteSettings/siteSettingsClient";
+import type { IImage } from "@/lib/supabase/types/common";
 
 /**
  * Top-level nav item styling, mirroring alesea.co's header: uppercase, 14px,
