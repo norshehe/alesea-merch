@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { AdminLink } from "@/features/admin/components/admin-link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -20,18 +20,18 @@ export function AdminSidebar() {
   return (
     <aside className="bg-sidebar hidden w-56 shrink-0 border-r md:block">
       <div className="flex h-14 items-center px-4">
-        <Link href="/admin" className="font-serif text-lg tracking-tight">
+        <AdminLink href="/admin" className="font-serif text-lg tracking-tight">
           Alesea
           <span className="text-muted-foreground ml-2 font-sans text-[10px] tracking-[0.18em] uppercase">
             Admin
           </span>
-        </Link>
+        </AdminLink>
       </div>
       <nav aria-label="Admin" className="grid gap-0.5 p-2">
         {ADMIN_NAV_ITEMS.map(({ label, href, icon: Icon }) => {
           const active = isNavItemActive(href, pathname);
           return (
-            <Link
+            <AdminLink
               key={href}
               href={href}
               aria-current={active ? "page" : undefined}
@@ -44,7 +44,7 @@ export function AdminSidebar() {
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
               {label}
-            </Link>
+            </AdminLink>
           );
         })}
       </nav>

@@ -1,21 +1,31 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
+import { useNavigationBlocker } from "@/features/admin/hooks/navigation-blocker";
 
 /**
- * Warn before a tab close / reload discards unsaved edits.
+ * Warn before unsaved edits are discarded — by a tab close, a reload, OR an
+ * in-app navigation.
  *
  * Extracted from `InventoryGrid`, which was the only surface that had it — the
  * long forms (product, category, settings, home; two of them multi-tab) had the
  * most typing at stake and no guard at all.
  *
- * ⚠️ This only covers leaving the DOCUMENT. Next's client-side router does not
- * fire `beforeunload`, so a sidebar click still navigates away silently; the
- * grid additionally confirms by hand before switching products. Guarding
- * in-app navigation would need `onNavigate` interception on every admin link,
- * which is a bigger change than this review is for.
+ * TWO mechanisms are required, because they cover different exits:
+ *
+ *  1. `beforeunload` — leaving the DOCUMENT. The browser supplies the wording.
+ *  2. The navigation blocker — Next's client-side router, which does NOT fire
+ *     `beforeunload`. Without it a sidebar click discarded a half-written
+ *     product in silence while a reload of that same form was challenged, which
+ *     is the more surprising half of the pair. `AdminLink` reads the flag.
+ *
+ * The key is per-hook-instance, so two dirty forms mounted at once each hold
+ * their own block and neither clears the other's.
  */
 export function useUnsavedChangesGuard(isDirty: boolean) {
+  const { setBlocked } = useNavigationBlocker();
+  const key = useId();
+
   useEffect(() => {
     if (!isDirty) return;
 
@@ -28,4 +38,11 @@ export function useUnsavedChangesGuard(isDirty: boolean) {
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [isDirty]);
+
+  useEffect(() => {
+    setBlocked(key, isDirty);
+    // Clearing on unmount matters: a form that navigates away after saving
+    // would otherwise leave its block behind and freeze the whole sidebar.
+    return () => setBlocked(key, false);
+  }, [isDirty, key, setBlocked]);
 }

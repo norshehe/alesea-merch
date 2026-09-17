@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { AdminLink } from "@/features/admin/components/admin-link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,7 +47,7 @@ export function AdminMobileNav() {
           {ADMIN_NAV_ITEMS.map(({ label, href, icon: Icon }) => {
             const active = isNavItemActive(href, pathname);
             return (
-              <Link
+              <AdminLink
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
@@ -61,7 +61,7 @@ export function AdminMobileNav() {
               >
                 <Icon className="size-4 shrink-0" aria-hidden="true" />
                 {label}
-              </Link>
+              </AdminLink>
             );
           })}
         </nav>
