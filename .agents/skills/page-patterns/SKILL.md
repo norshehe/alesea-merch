@@ -39,7 +39,7 @@ return <Grid items={items} />;
 
 - Always `next/image`. Provide `sizes` matching the grid breakpoints to avoid over-fetching.
 - Fixed aspect ratio wrapper (`aspect-square` / `aspect-[3/4]`) to prevent layout shift.
-- Contentful URLs are normalized to `https:` by `toImage`. You can append `?w=…&fm=webp&q=…` for Contentful's Image API.
+- Images come from the public `media` bucket in Supabase Storage; `publicUrl(path)` builds the URL. Let `next/image` handle resizing and format — do not hand-append transform params. Any new host must be added to `next.config.ts` `remotePatterns` or it 500s.
 
 ## Money
 

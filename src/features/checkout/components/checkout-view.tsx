@@ -18,6 +18,7 @@ import {
   placeOrder,
   type IPlaceOrderInput,
 } from "@/features/checkout/server/place-order";
+import type { IOrderAmounts } from "@/lib/supabase/order/orderClient";
 
 const INPUT_BASE =
   "w-full border bg-white px-[15px] py-[13px] text-sm text-ink outline-none transition-colors focus:border-teal";
@@ -63,6 +64,10 @@ interface IPlacedOrder {
   ref: string;
   name: string;
   email: string;
+  /** What the database actually charged — not the cart's arithmetic. */
+  charged: IOrderAmounts;
+  /** The total this browser last displayed, kept to detect a re-price. */
+  quoted: number;
 }
 
 export function CheckoutView() {
@@ -76,8 +81,6 @@ export function CheckoutView() {
     expressShipping: expressRate,
   } = useSettings();
 
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [promo, setPromo] = useState("");
   const [placed, setPlaced] = useState<IPlacedOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -99,22 +102,17 @@ export function CheckoutView() {
     return subtotal >= freeShipThreshold ? 0 : standardRate;
   }, [delivery, subtotal, expressRate, freeShipThreshold, standardRate]);
 
-  const discount = promoApplied ? Math.round(subtotal * 0.1) : 0;
-  const total = subtotal - discount + shipping;
+  // No discount: there is no promo system. The old COAST10 control computed
+  // 10% here in the browser, and the server now re-prices every order from the
+  // product table and forces the discount to 0 — so leaving it would have shown
+  // the customer a total they would not be charged. Restore this alongside a
+  // server-side promo table, never before it.
+  const discount = 0;
+  const total = subtotal + shipping;
 
   const deliveryLabel =
     DELIVERY_OPTIONS.find((d) => d.key === delivery)?.label ?? "Shipping";
 
-  const applyPromo = () => {
-    const code = promo.trim().toUpperCase();
-    if (!code) return;
-    if (code === "COAST10") {
-      setPromoApplied(true);
-      toast("COAST10 applied — 10% off");
-    } else {
-      toast("Invalid code");
-    }
-  };
 
   const onSubmit = async (values: CheckoutFormValues) => {
     const input: IPlaceOrderInput = {
@@ -133,7 +131,10 @@ export function CheckoutView() {
       deliveryLabel,
       paymentMethod: "Cash on delivery",
       lines: lines.map((line) => ({
+        slug: line.slug,
         name: line.name,
+        color: line.color,
+        size: line.size,
         variant: `${line.color} · ${line.size}`,
         quantity: line.quantity,
         unitPrice: line.price,
@@ -150,10 +151,14 @@ export function CheckoutView() {
     try {
       const res = await placeOrder(input);
       if (res.ok) {
-        setPlaced({ ref: res.reference, name: values.first, email: values.email });
+        setPlaced({
+          ref: res.reference,
+          name: values.first,
+          email: values.email,
+          charged: res.amounts,
+          quoted: total,
+        });
         clear();
-        setPromoApplied(false);
-        setPromo("");
         window.scrollTo({ top: 0 });
       } else {
         toast.error(res.error);
@@ -180,6 +185,34 @@ export function CheckoutView() {
           <p className="mt-[22px] font-mono text-[13px] tracking-[0.1em] text-clay">
             Order {placed.ref}
           </p>
+          {/*
+            The charged total, always — never the cart's arithmetic. The server
+            re-prices every line from `products`, so these can legitimately
+            differ from what this browser last showed: a price edited while the
+            bag sat open is enough. Saying nothing would mean a courier asking
+            for an amount the customer never agreed to, on cash on delivery.
+          */}
+          <p className="mt-6 text-[15px] font-normal text-ink">
+            Total due on delivery{" "}
+            <strong className="font-medium">
+              {formatPrice(placed.charged.total, placed.charged.currency)}
+            </strong>
+          </p>
+          {placed.charged.total !== placed.quoted ? (
+            <p className="mx-auto mt-3 max-w-[420px] border border-clay/40 bg-sand/40 px-4 py-3 text-[13px] leading-[1.6] text-stone-deep">
+              Prices changed while your bag was open, so this differs from the{" "}
+              {formatPrice(placed.quoted, placed.charged.currency)}{" "}
+              shown at checkout. The amount above is what you&rsquo;ll pay —
+              email{" "}
+              <a
+                href="mailto:hello@alesea.co"
+                className="text-teal underline underline-offset-4"
+              >
+                hello@alesea.co
+              </a>{" "}
+              if that isn&rsquo;t right.
+            </p>
+          ) : null}
           <Link
             href="/#shop-grid"
             className="mt-[30px] inline-block rounded-full border border-teal bg-teal px-8 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
@@ -382,34 +415,12 @@ export function CheckoutView() {
             ))}
           </div>
 
-          <div className="mb-[18px] flex gap-2">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value)}
-              placeholder="Discount code"
-              aria-label="Discount code"
-              className="flex-1 border border-line-deep bg-cream px-3.5 py-3 text-[13px] text-ink outline-none focus:border-teal"
-            />
-            <button
-              type="button"
-              onClick={applyPromo}
-              className="bg-ink px-[18px] text-[11px] tracking-[0.14em] uppercase text-white transition-colors hover:bg-teal focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
-            >
-              Apply
-            </button>
-          </div>
 
           <div className="border-t border-[#DCD0BC] pt-4">
             <div className="flex justify-between py-[7px] text-sm text-stone-deep">
               <span>Subtotal</span>
               <span className="text-ink">{formatPrice(subtotal, currency)}</span>
             </div>
-            {discount > 0 ? (
-              <div className="flex justify-between py-[7px] text-sm text-stone-deep">
-                <span>Discount (COAST10)</span>
-                <span className="text-ink">−{formatPrice(discount, currency)}</span>
-              </div>
-            ) : null}
             <div className="flex justify-between py-[7px] text-sm text-stone-deep">
               <span>{deliveryLabel}</span>
               <span className="text-ink">

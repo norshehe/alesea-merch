@@ -7,7 +7,7 @@ interface IAssurancesProps {
 
 /**
  * Decorative icons, paired with assurance copy by position. Copy comes from
- * Contentful (with design defaults); icons stay part of the design system.
+ * Supabase (with design defaults); icons stay part of the design system.
  */
 const ICONS: ReactNode[] = [
   <path key="bolt" d="M13 2 4 14h6l-1 8 9-12h-6z" />,

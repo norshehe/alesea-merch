@@ -5,7 +5,7 @@ import type { IGridStock } from "@/features/catalog/lib/build-grid-stock";
 
 interface IProductGridProps {
   products: ICatalogProduct[];
-  /** Per-product stock summary keyed by product id. Empty when Airtable is down. */
+  /** Per-product stock summary keyed by product id. Empty when inventory is unavailable. */
   stock?: IGridStock;
   /** Anchor id — the home page keeps `shop-grid` for its in-page CTAs. */
   id?: string;

@@ -136,6 +136,15 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Admin surfaces: neutral shadcn palette, brand teal (#084e50) for
+   primary actions and focus rings. */
+.admin-theme {
+  --primary: oklch(0.386 0.063 198);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.386 0.063 198);
+  --radius: 0.5rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

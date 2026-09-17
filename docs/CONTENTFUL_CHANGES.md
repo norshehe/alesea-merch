@@ -1,11 +1,22 @@
 # Contentful change-list — Shop Website Edits (260706)
 
-The storefront's **code changes are done**. The remaining edits below are **content that
-lives in Contentful** and must be applied there to appear on the live site — editing code
-does not change them, because Contentful values override the in-code fallbacks.
+> **SUPERSEDED — historical record only. Do not follow these instructions.**
+>
+> Contentful was retired on 2026-09-06; the site now runs on Supabase and there is
+> no Contentful space to edit. Every content change described below was applied and
+> then migrated into Postgres, including the "unpublish rather than delete"
+> recommendation — those five products imported as `status = 'draft'` and are
+> editable at `/admin/products`.
+>
+> To change content now: **`/admin`** — products, inventory, orders, signups,
+> categories, home page and site settings.
+>
+> Kept because it records *what* was changed and why, which the database does not.
 
-**Space:** `qrm1ftb7ac4w` · **Environment:** `master`
-(Note: this is a *different* space from the main Alesea marketing site, `10xzxgzadgtf`.)
+---
+
+*(Original context: Contentful space `qrm1ftb7ac4w`, environment `master` — a different
+space from the main Alesea marketing site, `10xzxgzadgtf`.)*
 
 > Recommendation: **unpublish** the discontinued products rather than delete them — the
 > Delivery API only returns published entries, so unpublishing removes them from the live

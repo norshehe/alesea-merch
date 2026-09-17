@@ -1,11 +1,10 @@
 import "server-only";
+import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
 import {
-  isAirtableConfigured,
-  listAirtableRecords,
-  updateAirtableRecord,
-  SIGNUPS_TABLE,
-} from "@/lib/airtable";
-import { getInventory } from "@/lib/airtable/inventory";
+  listPendingSignups,
+  markSignupNotified,
+} from "@/lib/supabase/signup/signupClient";
+import { getInventory } from "@/features/catalog/server/inventory";
 import { isSendGridConfigured, sendEmail } from "@/lib/sendgrid";
 import { getCatalog } from "@/features/catalog/server/catalog";
 import { stockStatus, variantKey } from "@/features/catalog/lib/stock";
@@ -15,27 +14,26 @@ import type { ICatalogProduct } from "@/features/catalog/types";
 /**
  * Back-in-stock notifications for "Notify Me" signups.
  *
- * State lives entirely in the Airtable Signups row: a signup with no
- * `Notified At` has never been emailed, and stamping it is what prevents a
- * second send. There is deliberately no "last seen stock" bookkeeping — the
- * promise made at signup is "we'll tell you when it lands", which is one email,
- * so the stamp alone is sufficient and idempotent.
+ * State lives entirely in the `signups` row: a signup with a null `notified_at`
+ * has never been emailed, and stamping it is what prevents a second send. There
+ * is deliberately no "last seen stock" bookkeeping — the promise made at signup
+ * is "we'll tell you when it lands", which is one email, so the stamp alone is
+ * sufficient and idempotent.
  *
  * Safety properties, in order of importance:
  *  1. Nothing sends unless `BACK_IN_STOCK_SEND === "true"` (dry-run default).
  *  2. The row is stamped BEFORE the email goes out, so a crash between the two
  *     under-sends rather than double-sends. A failed send rolls the stamp back.
- *  3. The first stamp of a run acts as a preflight: if the `Notified At` column
- *     is missing, the run aborts having sent nothing.
+ *  3. The first stamp of a run acts as a preflight: if writing to Supabase
+ *     fails at all, the run aborts having sent nothing.
+ *
+ * NO CUSTOMER EMAIL ADDRESS IS EVER LOGGED OR RETURNED. Vercel's logs are
+ * readable by everyone on the project and are shipped to whatever drain is
+ * attached; the mailing list is the exact data `signups` denies `anon` in the
+ * database, so writing it to stdout would hand it out through the back door.
+ * Signup ids identify a row precisely and are useless on their own — every
+ * diagnostic below uses one.
  */
-
-/** Signup fields we read from Airtable. */
-interface ISignupFields {
-  Email?: string;
-  Source?: string;
-  "Notified At"?: string;
-  "Notified For"?: string;
-}
 
 /** Outcome of one run, returned to the cron route and logged. */
 export interface IBackInStockResult {
@@ -49,7 +47,7 @@ export interface IBackInStockResult {
 }
 
 /**
- * Map a signup `Source` to a product slug.
+ * Map a signup `source` to a product slug.
  *
  * Sources are form-placement labels, not slugs — the tote teaser writes
  * `weekender-tote-teaser` while the product card writes `weekender-tote`. We
@@ -103,8 +101,8 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
     skipped: [],
   };
 
-  if (!isAirtableConfigured()) {
-    result.skipped.push("Airtable is not configured — cannot read signups.");
+  if (!isSupabaseAdminConfigured()) {
+    result.skipped.push("Supabase is not configured — cannot read signups.");
     return result;
   }
   if (live && !isSendGridConfigured()) {
@@ -117,37 +115,39 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
   const [products, inventory, signups] = await Promise.all([
     getCatalog(),
     getInventory(),
-    listAirtableRecords<ISignupFields>(SIGNUPS_TABLE).catch((error: unknown) => {
-      // A 403 here is almost always "the table does not exist" rather than a
-      // token problem — Airtable returns INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND
-      // for both. Say so, because the signup form fails for the same reason.
+    listPendingSignups().catch((error: unknown) => {
+      // The signups table denies `anon` entirely, so a permission error here
+      // means the service-role key is wrong or missing — the same failure the
+      // "Notify Me" form would hit when writing.
       throw new Error(
-        `Could not read the Airtable "${SIGNUPS_TABLE}" table. Confirm it exists and the token can read it — the "Notify Me" form writes to the same table. Cause: ${
+        `Could not read the "signups" table. Confirm SUPABASE_SERVICE_ROLE_KEY is set and valid — the "Notify Me" form writes to the same table. Cause: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
     }),
   ]);
 
-  // Group un-notified signups by the product they signed up for.
+  // Group pending signups by the product they signed up for. `listPendingSignups`
+  // already excludes anything with a `notified_at`.
   const pending = new Map<string, { id: string; email: string }[]>();
   for (const signup of signups) {
-    const { Email, Source, "Notified At": notifiedAt } = signup.fields;
-    if (!Email || !Source || notifiedAt) continue;
+    if (!signup.email || !signup.source) continue;
 
-    const slug = slugForSource(Source, products);
+    const slug = slugForSource(signup.source, products);
     if (!slug) {
-      result.skipped.push(`Signup source "${Source}" matches no product.`);
+      // The id, not the source: this string is returned in the cron response,
+      // and `source` is attacker-influenced free text from a public form.
+      result.skipped.push(`Signup ${signup.id} has a source matching no product.`);
       continue;
     }
 
     const list = pending.get(slug) ?? [];
-    list.push({ id: signup.id, email: Email });
+    list.push({ id: signup.id, email: signup.email });
     pending.set(slug, list);
   }
 
-  // Preflight guards the whole run: once it has passed we know the column
-  // exists, so later stamps failing is a per-recipient problem, not a schema one.
+  // Preflight guards the whole run: once one stamp has landed we know writes
+  // work, so a later stamp failing is a per-recipient problem, not a systemic one.
   let preflightDone = false;
 
   for (const [slug, recipients] of pending) {
@@ -158,10 +158,13 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
     result.products.push({ slug, recipients: recipients.length });
 
     if (!live) {
-      // Dry run: report who would be emailed, touch nothing.
+      // Dry run: report HOW MANY would be emailed and which rows, touch
+      // nothing. Dry run is the production default, so this line runs on every
+      // scheduled invocation — it previously printed the entire mailing list to
+      // the logs, daily.
       console.info(
-        `[back-in-stock] dry-run — would email ${recipients.length} recipient(s) about ${slug}:`,
-        recipients.map((r) => r.email).join(", "),
+        `[back-in-stock] dry-run — would email ${recipients.length} recipient(s) about ${slug}. Signup ids:`,
+        recipients.map((r) => r.id).join(", "),
       );
       continue;
     }
@@ -172,22 +175,18 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
     for (const recipient of recipients) {
       try {
         // Stamp first — see the safety notes above.
-        await updateAirtableRecord(
-          recipient.id,
-          { "Notified At": stampedAt, "Notified For": slug },
-          SIGNUPS_TABLE,
-        );
+        await markSignupNotified(recipient.id, stampedAt, slug);
         preflightDone = true;
       } catch (error) {
         if (!preflightDone) {
           const message =
-            "Could not write `Notified At` to the Signups table — aborting before any email is sent. Add the `Notified At` and `Notified For` fields to Airtable.";
+            "Could not write `notified_at` to the signups table — aborting before any email is sent. Check SUPABASE_SERVICE_ROLE_KEY and Supabase connectivity.";
           console.error(`[back-in-stock] ${message}`, error);
           result.skipped.push(message);
           return result;
         }
         console.error(
-          `[back-in-stock] could not stamp ${recipient.email} — skipping to avoid a duplicate send.`,
+          `[back-in-stock] could not stamp signup ${recipient.id} — skipping to avoid a duplicate send.`,
           error,
         );
         result.failed += 1;
@@ -199,19 +198,16 @@ export async function runBackInStockNotifications(): Promise<IBackInStockResult>
         result.sent += 1;
       } catch (error) {
         console.error(
-          `[back-in-stock] send failed for ${recipient.email} — rolling back the stamp.`,
+          `[back-in-stock] send failed for signup ${recipient.id} — rolling back the stamp.`,
           error,
         );
         result.failed += 1;
         try {
-          await updateAirtableRecord(
-            recipient.id,
-            { "Notified At": "", "Notified For": "" },
-            SIGNUPS_TABLE,
-          );
+          // NULL, not "" — an empty string would still count as notified.
+          await markSignupNotified(recipient.id, null, null);
         } catch (rollbackError) {
           console.error(
-            `[back-in-stock] rollback failed for ${recipient.email} — it will not be retried automatically.`,
+            `[back-in-stock] rollback failed for signup ${recipient.id} — it will not be retried automatically.`,
             rollbackError,
           );
         }

@@ -5,7 +5,7 @@ description: Scaffold a complete feature module directory with components, schem
 
 # Feature Scaffolder
 
-Generate a feature module directory under `src/features/` following the alesea-merch convention. A feature module owns its UI, local hooks, form schemas, and constants — but **not** the Contentful data layer (that lives in `src/lib/contentful/`, scaffolded by `contentful-domain-scaffolder`).
+Generate a feature module directory under `src/features/` following the alesea-merch convention. A feature module owns its UI, local hooks, form schemas, and constants — but **not** the data layer (that lives in `src/lib/supabase/`).
 
 ## Before Starting
 
@@ -13,7 +13,7 @@ Ask the user for (or infer):
 
 - **Feature name** (kebab-case dir, e.g. `catalog`, `cart`, `checkout`, `collections`).
 - **What it contains**: listing page? detail view? forms? cart interaction?
-- **Does it need a Contentful content type?** If yes, also run `contentful-domain-scaffolder`.
+- **Does it need a new table?** If yes, add a migration in `supabase/migrations/`, regenerate types, then a `*Client.ts` under `src/lib/supabase/`.
 
 ## Directory structure
 
@@ -30,7 +30,7 @@ Only create the subdirectories the feature actually needs — don't generate emp
 
 ## Rules
 
-1. **No data layer here.** Contentful clients/handlers live in `src/lib/contentful/<domain>/`. Features *consume* handlers, they don't define them.
+1. **No data layer here.** Clients live in `src/lib/supabase/<domain>/`. Features *consume* them, they don't define them.
 2. **Shared vs feature components.** Generic primitives go in `src/components/ui/` (shadcn). Reusable cross-feature pieces go in `src/components/`. Feature-specific UI stays in the feature.
 3. **Barrel `index.ts`** exports the feature's public components/hooks so routes import from `@/features/<feature>` cleanly.
 4. **Zod schemas** in `schemas/` follow `form-builder` conventions; export both the schema and its inferred type.

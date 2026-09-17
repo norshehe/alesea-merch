@@ -4,10 +4,10 @@
  *
  * Source of truth is https://www.alesea.co/ — labels, order and hrefs were taken
  * from its live header. This is deliberately a code constant rather than a
- * Contentful field: it mirrors *another* site's information architecture, not
- * shop content, so it should change when alesea.co changes, not when a shop
- * editor edits an entry. Contentful `siteSettings.navLinks` still renders as
- * additional trailing items (see `site-header.tsx`).
+ * CMS field: it mirrors *another* site's information architecture, not shop
+ * content, so it should change when alesea.co changes, not when a shop editor
+ * edits a row. `site_settings.nav_links` still renders as additional trailing
+ * items (see `site-header.tsx`).
  */
 export interface IMainNavItem {
   label: string;

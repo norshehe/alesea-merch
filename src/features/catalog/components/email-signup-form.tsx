@@ -13,7 +13,7 @@ import {
 import { captureEmail } from "@/features/catalog/server/capture-email";
 
 interface IEmailSignupFormProps {
-  /** Where the signup came from, forwarded to Airtable (e.g. "weekender-tote"). */
+  /** Where the signup came from, recorded with the signup (e.g. "weekender-tote"). */
   source: string;
   placeholder?: string;
   buttonLabel?: string;

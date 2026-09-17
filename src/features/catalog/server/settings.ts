@@ -1,16 +1,17 @@
 import "server-only";
 import {
-  getSiteSettingsFromContentful,
+  getSiteSettingsFromSupabase,
   type ISiteSettings,
-} from "@/lib/contentful/siteSettings/siteSettingsClient";
+} from "@/lib/supabase/siteSettings/siteSettingsClient";
 import {
   FREE_SHIP_THRESHOLD,
   SHIPPING,
 } from "@/features/catalog/constants/products";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 
 /**
  * Hardcoded defaults matching the current design. Used per-field when
- * Contentful is unreachable or a field is empty, so the site renders
+ * Supabase is unreachable or a field is empty, so the site renders
  * identically to before the data-source swap.
  */
 export const SETTINGS_FALLBACK: ISiteSettings = {
@@ -26,7 +27,7 @@ export const SETTINGS_FALLBACK: ISiteSettings = {
   contactAddress: "BGC, Taguig, PH",
   contactSocial: "Instagram · Facebook",
   // Empty by default: the header nav mirrors alesea.co from `MAIN_NAV` in code.
-  // Contentful `navLinks` are rendered as extra trailing items on top of that.
+  // Remote `navLinks` are rendered as extra trailing items on top of that.
   navLinks: [],
   bookNowLabel: "Book Now",
   bookNowUrl: "https://book.alesea.co/all-listings",
@@ -37,7 +38,7 @@ export const SETTINGS_FALLBACK: ISiteSettings = {
   ],
 };
 
-/** Merge a Contentful value with its fallback when empty. */
+/** Merge a remote value with its fallback when empty. */
 function str(value: string | undefined, fallback: string): string {
   return value && value.trim().length > 0 ? value : fallback;
 }
@@ -47,16 +48,23 @@ function num(value: number | undefined, fallback: number): number {
 }
 
 /**
- * Site settings for Server Components. Contentful first, with per-field
+ * Site settings for Server Components. Supabase first, with per-field
  * fallback to {@link SETTINGS_FALLBACK} so missing data never breaks render.
  */
 export async function getSiteSettings(): Promise<ISiteSettings> {
+  // The layout renders on every route, so a missing config must degrade to the
+  // design defaults rather than fail the render.
+  if (!isSupabaseConfigured()) {
+    console.warn("[settings] Supabase is not configured — using defaults.");
+    return SETTINGS_FALLBACK;
+  }
+
   let remote: ISiteSettings | null = null;
   try {
-    remote = await getSiteSettingsFromContentful();
+    remote = await getSiteSettingsFromSupabase();
   } catch (error) {
     console.warn(
-      "[settings] Contentful siteSettings fetch failed — using defaults.",
+      "[settings] Supabase site_settings fetch failed — using defaults.",
       error,
     );
   }
@@ -93,4 +101,4 @@ export async function getSiteSettings(): Promise<ISiteSettings> {
   };
 }
 
-export type { ISiteSettings } from "@/lib/contentful/siteSettings/siteSettingsClient";
+export type { ISiteSettings } from "@/lib/supabase/siteSettings/siteSettingsClient";

@@ -1,17 +1,18 @@
 import "server-only";
 import {
-  getHomeContentFromContentful,
+  getHomeContentFromSupabase,
   type IAssurance,
   type IHomeContent,
-} from "@/lib/contentful/home/homeClient";
-import type { IShopCategory } from "@/lib/contentful/types/shopCategory/response";
+} from "@/lib/supabase/home/homeClient";
+import type { IShopCategory } from "@/lib/supabase/types/shopCategory/response";
+import { isSupabaseConfigured } from "@/lib/supabase/public";
 
 /**
  * Hardcoded homepage defaults, mirroring the original design copy and imagery.
- * Used per-field when Contentful is unreachable or a field is empty, so the
+ * Used per-field when Supabase is unreachable or a field is empty, so the
  * home page renders identically to before the data-source swap.
  */
-const HOME_FALLBACK: IHomeContent = {
+export const HOME_FALLBACK: IHomeContent = {
   heroEyebrow: "The Alesea Shop · La Union",
   heroHeading: "Carry the coast home.",
   heroBody:
@@ -80,17 +81,24 @@ function assurances(value: IAssurance[], fallback: IAssurance[]): IAssurance[] {
 }
 
 /**
- * Fully-typed homepage content for Server Components. Contentful first, with
+ * Fully-typed homepage content for Server Components. Supabase first, with
  * per-field fallback to the original design copy. Image fields keep the
- * Contentful URL when present, else the original CDN image (or null).
+ * Supabase URL when present, else the original CDN image (or null).
  */
 export async function getHomeContent(): Promise<IHomeContent> {
+  // Editorial copy is presentational — a missing config degrades to the design
+  // defaults rather than failing the home page.
+  if (!isSupabaseConfigured()) {
+    console.warn("[home] Supabase is not configured — using design defaults.");
+    return HOME_FALLBACK;
+  }
+
   let remote: IHomeContent | null = null;
   try {
-    remote = await getHomeContentFromContentful();
+    remote = await getHomeContentFromSupabase();
   } catch (error) {
     console.warn(
-      "[home] Contentful homePage fetch failed — using design defaults.",
+      "[home] Supabase home_content fetch failed — using design defaults.",
       error,
     );
   }
@@ -133,4 +141,4 @@ export async function getHomeContent(): Promise<IHomeContent> {
 export type {
   IHomeContent,
   IAssurance,
-} from "@/lib/contentful/home/homeClient";
+} from "@/lib/supabase/home/homeClient";

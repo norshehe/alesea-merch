@@ -1,53 +1,48 @@
 import "server-only";
 import {
-  getProductBySlugFromContentful,
-  getProductsFromContentful,
-} from "@/lib/contentful/product/productClient";
-import {
-  PRODUCTS,
-  getRelatedProducts as getRelatedFromList,
-} from "@/features/catalog/constants/products";
+  getProductBySlugFromSupabase,
+  getProductsFromSupabase,
+} from "@/lib/supabase/product/productClient";
+import { getRelatedProducts as getRelatedFromList } from "@/features/catalog/lib/related";
 import type { ICatalogProduct } from "@/features/catalog/types";
 
 /**
  * Catalog data access for Server Components.
  *
- * Contentful is the source of truth; the local `PRODUCTS` catalog is the
- * offline / empty fallback. If Contentful throws OR returns nothing, the site
- * renders identically to the local catalog (a `console.warn` flags the fallback).
+ * Supabase is the ONLY source of truth — there is deliberately no hardcoded
+ * fallback catalog. A stale in-code catalog would serve wrong prices and
+ * phantom products, which is worse than no render at all.
+ *
+ * FETCH ERRORS MUST THROW. ISR only keeps serving the last good render when a
+ * revalidation *throws*; a swallowed error that returns `[]` / `undefined` is a
+ * successful render of an empty grid — or a `notFound()` — and that gets
+ * written into the ISR cache and served to everyone for the next `revalidate`
+ * window. A transient network blip would become a cached 404. Throwing instead
+ * fires the segment's `error.tsx` on a cold render and leaves the previous
+ * cache entry intact on a background revalidation.
+ *
+ * `undefined` from {@link getProduct} therefore means exactly one thing: the
+ * query succeeded and matched no row. That, and only that, warrants
+ * `notFound()`.
  */
 
-/** All products — Contentful first, local catalog as fallback. */
+/**
+ * All published products, ordered by `sort_order` then title.
+ * Throws when the query fails — never returns `[]` to mask an error.
+ */
 export async function getCatalog(): Promise<ICatalogProduct[]> {
-  try {
-    const products = await getProductsFromContentful();
-    if (products.length > 0) return products;
-    console.warn(
-      "[catalog] Contentful returned no products — falling back to local catalog.",
-    );
-  } catch (error) {
-    console.warn(
-      "[catalog] Contentful product fetch failed — falling back to local catalog.",
-      error,
-    );
-  }
-  return PRODUCTS;
+  return getProductsFromSupabase();
 }
 
-/** A single product by slug — Contentful first, local catalog as fallback. */
+/**
+ * A single published product by slug.
+ * `undefined` means "no such row" (a successful query with zero rows), which
+ * lets callers `notFound()`. Query failures throw.
+ */
 export async function getProduct(
   slug: string,
 ): Promise<ICatalogProduct | undefined> {
-  try {
-    const product = await getProductBySlugFromContentful(slug);
-    if (product) return product;
-  } catch (error) {
-    console.warn(
-      `[catalog] Contentful fetch failed for slug "${slug}" — falling back to local catalog.`,
-      error,
-    );
-  }
-  return PRODUCTS.find((p) => p.slug === slug);
+  return (await getProductBySlugFromSupabase(slug)) ?? undefined;
 }
 
 /**
@@ -59,6 +54,5 @@ export function getRelated(
   catalog: ICatalogProduct[],
   limit = 4,
 ): ICatalogProduct[] {
-  const pool = catalog.length > 0 ? catalog : PRODUCTS;
-  return getRelatedFromList(product, limit, pool);
+  return getRelatedFromList(product, limit, catalog);
 }

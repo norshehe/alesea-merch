@@ -1,11 +1,11 @@
 "use server";
 
+import { isSupabaseAdminConfigured } from "@/lib/supabase/admin";
+import { createSignup } from "@/lib/supabase/signup/signupClient";
 import {
-  createAirtableRecord,
-  isAirtableConfigured,
-  SIGNUPS_TABLE,
-} from "@/lib/airtable";
-import { emailSignupSchema } from "@/features/catalog/schemas/email-signup.schema";
+  emailSignupSchema,
+  signupSourceSchema,
+} from "@/features/catalog/schemas/email-signup.schema";
 
 export interface ICaptureEmailInput {
   email: string;
@@ -16,14 +16,12 @@ export interface ICaptureEmailInput {
 type CaptureEmailResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Persist an email signup to the Airtable Signups table.
+ * Persist an email signup to the `signups` table.
  *
- * Mirrors {@link placeOrder}: when Airtable is not configured the record is not
+ * Mirrors {@link placeOrder}: when Supabase is not configured the record is not
  * persisted but the call still succeeds so local/demo environments work. Email
  * is validated server-side; configured failures return a friendly message.
- *
- * `Created At` is intentionally omitted — Airtable created-time fields are
- * read-only and reject writes, so we let Airtable stamp it automatically.
+ * A repeat signup is a no-op rather than an error — see `createSignup`.
  */
 export async function captureEmail(
   input: ICaptureEmailInput,
@@ -33,21 +31,25 @@ export async function captureEmail(
     return { ok: false, error: "Enter a valid email." };
   }
 
-  const fields: Record<string, unknown> = {
-    Email: parsed.data.email,
-    Source: input.source,
-  };
+  // `source` is set by our own forms, never typed by a customer — so anything
+  // that fails this is a hand-crafted request, and it is the field that decides
+  // both dedup and which restock blast the row joins. See signupSourceSchema.
+  const source = signupSourceSchema.safeParse(input.source);
+  if (!source.success) {
+    console.warn("[signups] Rejected signup with an invalid source");
+    return { ok: false, error: "We couldn't save your email. Please try again." };
+  }
 
-  if (!isAirtableConfigured()) {
-    console.warn("[signups] Airtable not configured — email not persisted");
+  if (!isSupabaseAdminConfigured()) {
+    console.warn("[signups] Supabase not configured — email not persisted");
     return { ok: true };
   }
 
   try {
-    await createAirtableRecord(fields, SIGNUPS_TABLE);
+    await createSignup({ email: parsed.data.email, source: source.data });
     return { ok: true };
   } catch (error) {
-    console.error("[signups] Failed to persist email to Airtable:", error);
+    console.error("[signups] Failed to persist email to Supabase:", error);
     return {
       ok: false,
       error: "We couldn't save your email. Please try again.",

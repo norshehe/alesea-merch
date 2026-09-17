@@ -2,39 +2,52 @@
 
 Emails everyone who used a "Notify Me" form once the product they signed up for
 has stock. Runs on a schedule, sends through SendGrid, and records the send on
-the Airtable signup row.
+the signup row in Postgres.
 
 ## How it decides who to email
 
-State lives entirely on the Airtable **Signups** row. A signup with an empty
-`Notified At` has never been emailed; stamping it is what prevents a second
+State lives entirely on the `public.signups` row. A signup with a null
+`notified_at` has never been emailed; stamping it is what prevents a second
 send. There is no "last seen stock" bookkeeping — the promise made at signup is
 "we'll tell you when it lands", which is exactly one email.
 
 Each run:
 
-1. reads the catalog, the Airtable `Inventory` table and the `Signups` table;
-2. groups signups with no `Notified At` by product (`Source` → product slug);
+1. reads the catalog, the `inventory` table and the pending `signups`
+   (filtered server-side by `notified_at is null`, which hits a partial index);
+2. groups them by product (`source` → product slug);
 3. keeps the products whose stock is an **explicit** number greater than zero
    (unknown stock counts as in-stock everywhere else in the app, but here it
    would email customers about a product nobody has stocked yet);
 4. stamps the row, then sends the email.
 
-## Required Airtable setup
+## Required data
 
-The base needs a **`Signups`** table (created 2026-09-06, id `tblbSi26de2xQWanV`).
-Fields:
+The `public.signups` table (see `supabase/migrations/0004_signups.sql`):
 
-| Field | Type | Written by |
+| Column | Type | Written by |
 | --- | --- | --- |
-| `Email` | Single line text | the signup form |
-| `Source` | Single line text | the signup form (e.g. `weekender-tote`, `weekender-tote-teaser`) |
-| `Notified At` | Single line text or Date | this job |
-| `Notified For` | Single line text | this job |
+| `email` | text | the signup form |
+| `source` | text | the signup form (e.g. `weekender-tote`, `weekender-tote-teaser`) |
+| `notified_at` | timestamptz, null | this job |
+| `notified_for` | text, null | this job |
+| `created_at` | timestamptz | database default |
 
-`Source` is a form-placement label, not a slug. The job matches the longest
+A unique index on `(lower(email), source)` makes re-signup a no-op, so a
+customer who submits twice still receives exactly one email.
+
+`source` is a form-placement label, not a slug. The job matches the longest
 product slug that the source starts with, so `<slug>-<placement>` sources keep
 working without a lookup table.
+
+Stock comes from `public.inventory`, which is **sparse on purpose**: a variant
+with no row has *unknown* stock. The storefront treats unknown as in-stock so a
+sale is never blocked by missing data; this job does the opposite and requires
+an explicit positive number, so nobody is emailed about a product that has never
+actually been stocked.
+
+Reads and writes use the **service-role** client: `signups` has no anon RLS
+policy at all, so it is unreadable with the public key.
 
 ## Environment
 
@@ -44,6 +57,7 @@ SENDGRID_FROM_EMAIL=       # MUST be a verified sender/domain in SendGrid
 SENDGRID_FROM_NAME=Alesea Lifestyle
 SENDGRID_REPLY_TO=         # optional
 CRON_SECRET=               # shared secret; without it the route returns 503
+SUPABASE_SERVICE_ROLE_KEY= # required — signups are not readable with the anon key
 BACK_IN_STOCK_SEND=false   # "true" arms the job; anything else is a dry run
 ```
 
@@ -51,7 +65,7 @@ BACK_IN_STOCK_SEND=false   # "true" arms the job; anything else is a dry run
 
 With `BACK_IN_STOCK_SEND` unset or not `"true"` the job reads everything,
 reports which products are back in stock and who *would* be emailed, and touches
-nothing — no email, no Airtable write.
+nothing — no email, no database write.
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
@@ -76,18 +90,19 @@ crons; on Pro, tighten to e.g. `*/15 * * * *`). Vercel Cron sends
 
 - **No `CRON_SECRET`** — 503. The endpoint stays shut rather than becoming a
   public "email all my customers" button.
-- **Missing `Notified At` column** — the first stamp of a run fails, the run
-  aborts and *nothing* is emailed.
+- **No service-role key** — the run reports it and sends nothing.
+- **First stamp fails** (RLS misconfigured, connection lost) — the run aborts
+  before any email goes out. The column can no longer be missing, but the
+  preflight guard is kept because it gives the same safety property.
 - **Stamp succeeds, send fails** — the stamp is rolled back so the next run
   retries that recipient.
 - **Crash between stamp and send** — that recipient is not emailed. Deliberate:
   under-sending beats double-sending.
 - **One bad address** — logged, counted in `failed`, the queue continues.
 
-## Known gap
+## History
 
-~~The `Signups` table is absent from the Airtable base.~~ **Resolved
-2026-09-06** — the table was created with the fields above (`Email` is an
-Airtable email field; the rest are single line text). "Notify Me" submissions
-now persist. Remaining setup before arming the job: the SendGrid env vars and
-`CRON_SECRET` in Vercel, then `BACK_IN_STOCK_SEND=true` after a clean dry run.
+- **2026-09-06** — migrated from Airtable to Supabase Postgres. The Airtable
+  `Signups` table was created that morning, one signup was captured and
+  notified, and the row was imported with its `notified_at` stamp intact so the
+  customer is not emailed twice.
