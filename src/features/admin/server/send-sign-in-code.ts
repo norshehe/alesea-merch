@@ -3,27 +3,24 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { adminLoginSchema } from "@/features/admin/schemas/login.schema";
 
-type SendMagicLinkResult = { ok: true } | { ok: false; error: string };
-
-/** Where the emailed link lands. Must be an allowed redirect URL in Supabase Auth. */
-function confirmUrl(next?: string): string {
-  const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const url = new URL("/auth/confirm", site);
-  if (next && next.startsWith("/")) url.searchParams.set("next", next);
-  return url.toString();
-}
+type SendSignInCodeResult = { ok: true } | { ok: false; error: string };
 
 /**
  * Email a one-time sign-in code to an admin.
  *
- * One `signInWithOtp` call issues BOTH forms of the same grant — a numeric
- * code and a clickable link — and the Supabase email template decides which of
- * them the message actually shows. The template must render `{{ .Token }}`, or
- * this sends a link nobody can use: mail scanners spend link tokens on arrival,
- * which is why `LoginForm` asks for the typed code.
+ * CODE ONLY — no `emailRedirectTo`, and the Supabase template must render
+ * `{{ .Token }}` and NOT `{{ .ConfirmationURL }}`.
  *
- * `emailRedirectTo` is still set so the link half keeps working on mailboxes
- * that do not prefetch; it lands on `/auth/confirm`.
+ * One `signInWithOtp` call issues a SINGLE grant redeemable either by typing
+ * the code or by following a link. Shipping both in one email is worse than
+ * shipping only the link: a mail scanner that prefetches the URL spends the
+ * grant, and then the code the recipient is staring at fails too. So the link
+ * is gone, and `/auth/confirm` with it — a URL that mints an admin session is
+ * exactly what a prefetching scanner turns into a lockout.
+ *
+ * Losing the link also makes sign-in independent of Supabase's Site URL and
+ * redirect allow-list, which is where the production link was pointing at
+ * localhost.
  *
  * `shouldCreateUser: false` is what makes this INVITE-ONLY: Supabase will not
  * provision an account for an unknown address, so an uninvited email simply gets
@@ -35,8 +32,7 @@ function confirmUrl(next?: string): string {
  */
 export async function sendSignInCode(input: {
   email: string;
-  next?: string;
-}): Promise<SendMagicLinkResult> {
+}): Promise<SendSignInCodeResult> {
   const parsed = adminLoginSchema.safeParse({ email: input.email });
   if (!parsed.success) {
     return { ok: false, error: "Enter a valid email." };
@@ -45,10 +41,7 @@ export async function sendSignInCode(input: {
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
-    options: {
-      shouldCreateUser: false,
-      emailRedirectTo: confirmUrl(input.next),
-    },
+    options: { shouldCreateUser: false },
   });
 
   if (error) {
