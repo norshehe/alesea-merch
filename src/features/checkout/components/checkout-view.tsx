@@ -18,6 +18,7 @@ import {
   placeOrder,
   type IPlaceOrderInput,
 } from "@/features/checkout/server/place-order";
+import type { IOrderAmounts } from "@/lib/supabase/order/orderClient";
 
 const INPUT_BASE =
   "w-full border bg-white px-[15px] py-[13px] text-sm text-ink outline-none transition-colors focus:border-teal";
@@ -63,6 +64,10 @@ interface IPlacedOrder {
   ref: string;
   name: string;
   email: string;
+  /** What the database actually charged — not the cart's arithmetic. */
+  charged: IOrderAmounts;
+  /** The total this browser last displayed, kept to detect a re-price. */
+  quoted: number;
 }
 
 export function CheckoutView() {
@@ -146,7 +151,13 @@ export function CheckoutView() {
     try {
       const res = await placeOrder(input);
       if (res.ok) {
-        setPlaced({ ref: res.reference, name: values.first, email: values.email });
+        setPlaced({
+          ref: res.reference,
+          name: values.first,
+          email: values.email,
+          charged: res.amounts,
+          quoted: total,
+        });
         clear();
         window.scrollTo({ top: 0 });
       } else {
@@ -174,6 +185,34 @@ export function CheckoutView() {
           <p className="mt-[22px] font-mono text-[13px] tracking-[0.1em] text-clay">
             Order {placed.ref}
           </p>
+          {/*
+            The charged total, always — never the cart's arithmetic. The server
+            re-prices every line from `products`, so these can legitimately
+            differ from what this browser last showed: a price edited while the
+            bag sat open is enough. Saying nothing would mean a courier asking
+            for an amount the customer never agreed to, on cash on delivery.
+          */}
+          <p className="mt-6 text-[15px] font-normal text-ink">
+            Total due on delivery{" "}
+            <strong className="font-medium">
+              {formatPrice(placed.charged.total, placed.charged.currency)}
+            </strong>
+          </p>
+          {placed.charged.total !== placed.quoted ? (
+            <p className="mx-auto mt-3 max-w-[420px] border border-clay/40 bg-sand/40 px-4 py-3 text-[13px] leading-[1.6] text-stone-deep">
+              Prices changed while your bag was open, so this differs from the{" "}
+              {formatPrice(placed.quoted, placed.charged.currency)}{" "}
+              shown at checkout. The amount above is what you&rsquo;ll pay —
+              email{" "}
+              <a
+                href="mailto:hello@alesea.co"
+                className="text-teal underline underline-offset-4"
+              >
+                hello@alesea.co
+              </a>{" "}
+              if that isn&rsquo;t right.
+            </p>
+          ) : null}
           <Link
             href="/#shop-grid"
             className="mt-[30px] inline-block rounded-full border border-teal bg-teal px-8 py-4 text-[12px] tracking-[0.18em] uppercase text-white transition hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal"
