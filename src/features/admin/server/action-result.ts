@@ -13,7 +13,13 @@ import "server-only";
 
 export type ActionResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? object : T))
-  | { ok: false; error: string };
+  /**
+   * `field` names the form control the message belongs to, when the failure is
+   * attributable to one. Callers that ignore it still get a usable `error`;
+   * callers that honour it can put the message under the offending input
+   * instead of in a toast that scrolls away without marking anything.
+   */
+  | { ok: false; error: string; field?: string };
 
 export interface IPostgresError {
   code?: string;

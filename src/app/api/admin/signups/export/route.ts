@@ -29,12 +29,20 @@ export const dynamic = "force-dynamic";
  * Leading characters that make a spreadsheet treat a cell as something other
  * than text.
  *
- * `= + - @` are the formula starters. Tab, CR and LF are here because Excel and
- * Sheets STRIP leading whitespace before parsing, so `\t=cmd|…` is read as
- * `=cmd|…` and the naive prefix check never fires. `|` starts a DDE payload
- * (`|cmd|'/c calc'!A0`), which is the same class of attack without an `=`.
+ * `= + - @` are the formula starters. Whitespace is here because Excel and
+ * Sheets STRIP it before parsing, so `\t=cmd|…` is read as `=cmd|…` and a naive
+ * prefix check never fires — the SPACE counts for exactly the same reason as
+ * the tab, so the test below is "is the first character whitespace", not a list
+ * of the whitespace characters someone happened to think of. `|` starts a DDE
+ * payload (`|cmd|'/c calc'!A0`), the same class of attack without an `=`.
  */
-const FORMULA_TRIGGERS = new Set(["=", "+", "-", "@", "|", "\t", "\r", "\n"]);
+const FORMULA_TRIGGERS = new Set(["=", "+", "-", "@", "|"]);
+
+/** True for a cell a spreadsheet might execute rather than display. */
+function isDangerousLead(raw: string): boolean {
+  const first = raw.charAt(0);
+  return FORMULA_TRIGGERS.has(first) || /\s/.test(first);
+}
 
 /**
  * One CSV cell.
@@ -50,7 +58,7 @@ const FORMULA_TRIGGERS = new Set(["=", "+", "-", "@", "|", "\t", "\r", "\n"]);
  */
 function toCell(value: string | null): string {
   const raw = value ?? "";
-  const safe = FORMULA_TRIGGERS.has(raw.charAt(0)) ? `'${raw}` : raw;
+  const safe = isDangerousLead(raw) ? `'${raw}` : raw;
   return `"${safe.replace(/"/g, '""')}"`;
 }
 

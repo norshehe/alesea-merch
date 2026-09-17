@@ -20,6 +20,7 @@ import {
 } from "@/features/admin/settings/schemas/settings.schema";
 import { saveSiteSettings } from "@/features/admin/settings/server/settings.actions";
 import type { IAdminSiteSettings } from "@/features/admin/settings/server/settings.queries";
+import { selectOnFocus } from "@/features/admin/components/select-on-focus";
 import type { ISiteSettings } from "@/lib/supabase/siteSettings/siteSettingsClient";
 
 interface ISettingsFormProps {
@@ -300,6 +301,7 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
               <Input
                 id="logoWidth"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"
@@ -318,6 +320,7 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
               <Input
                 id="logoHeight"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"
@@ -362,6 +365,7 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
               <Input
                 id="freeShipThreshold"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"
@@ -381,6 +385,7 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
               <Input
                 id="standardShipping"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"
@@ -400,6 +405,7 @@ export function SettingsForm({ settings, defaults }: ISettingsFormProps) {
               <Input
                 id="expressShipping"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"

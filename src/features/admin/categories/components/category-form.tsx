@@ -23,6 +23,7 @@ import {
 } from "@/features/admin/categories/schemas/category.schema";
 import { saveCategory } from "@/features/admin/categories/server/category.actions";
 import type { IAdminCategory } from "@/features/admin/categories/server/category.queries";
+import { selectOnFocus } from "@/features/admin/components/select-on-focus";
 
 const FILTER_KEY_OPTIONS = CATEGORY_FILTER_KEYS.map((key) => ({
   value: key,
@@ -171,6 +172,7 @@ export function CategoryForm({ category }: ICategoryFormProps) {
               <Input
                 id="sortOrder"
                 type="number"
+                onFocus={selectOnFocus}
                 step={1}
                 inputMode="numeric"
                 disabled={busy}

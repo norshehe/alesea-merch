@@ -40,6 +40,7 @@ import type {
   IInventoryRow,
 } from "@/features/admin/inventory/server/inventory.queries";
 import type { IInventoryOrphan } from "@/features/admin/products/server/product.queries";
+import { selectOnFocus } from "@/features/admin/components/select-on-focus";
 import {
   LOW_STOCK_THRESHOLD,
   stockStatus,
@@ -238,7 +239,23 @@ export function InventoryGrid({
                     className="w-72"
                     disabled={isSaving}
                   >
-                    <SelectValue />
+                    {/*
+                      Base UI renders the raw VALUE by default, and the value
+                      here is a uuid — the trigger read as
+                      "846ffcb0-884f-…" instead of the product name. Map it
+                      back to the title the list shows.
+                    */}
+                    <SelectValue>
+                      {(value) => {
+                        const selected = products.find(
+                          (option) => option.id === value,
+                        );
+                        if (!selected) return null;
+                        return `${selected.title}${
+                          selected.status === "draft" ? " (draft)" : ""
+                        }`;
+                      }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {products.map((option) => (
@@ -329,6 +346,7 @@ export function InventoryGrid({
                       <td key={size} className="px-3 py-2 align-top">
                         <Input
                           type="number"
+                          onFocus={selectOnFocus}
                           min={0}
                           step={1}
                           inputMode="numeric"

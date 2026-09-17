@@ -4,6 +4,7 @@ import { requireAdmin } from "@/features/admin/server/auth";
 import {
   firstIssue,
   notWrittenMessage,
+  isPostgresError,
   toActionMessage,
   type ActionResult,
   type ConstraintMessages,
@@ -46,6 +47,27 @@ const PRODUCT_CONSTRAINTS: ConstraintMessages = {
 
 function toMessage(error: unknown, fallback: string): string {
   return toActionMessage(error, fallback, PRODUCT_CONSTRAINTS);
+}
+
+/**
+ * Which form control a constraint failure belongs under.
+ *
+ * Only the slug constraints are attributable to a single input. A duplicate
+ * slug used to surface as a toast: it vanished after a few seconds, left the
+ * offending field unmarked, and gave no hint that `slug` — not the title the
+ * operator had just typed — was the thing to change.
+ */
+const CONSTRAINT_FIELDS: Record<string, string> = {
+  products_slug_key: "slug",
+  products_slug_format: "slug",
+};
+
+function toField(error: unknown): string | undefined {
+  if (!isPostgresError(error)) return undefined;
+  for (const [needle, field] of Object.entries(CONSTRAINT_FIELDS)) {
+    if (error.message.includes(needle)) return field;
+  }
+  return undefined;
 }
 
 function toRow(values: ProductValues) {
@@ -221,7 +243,11 @@ export async function saveProduct(
     return { ok: true, id: saved.id, slug: saved.slug };
   } catch (error) {
     console.error("[admin-products] save failed", error);
-    return { ok: false, error: toMessage(error, "Could not save this product.") };
+    return {
+      ok: false,
+      error: toMessage(error, "Could not save this product."),
+      field: toField(error),
+    };
   }
 }
 

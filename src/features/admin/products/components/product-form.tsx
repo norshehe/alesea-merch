@@ -27,6 +27,7 @@ import {
 } from "@/features/admin/products/schemas/product.schema";
 import { saveProduct } from "@/features/admin/products/server/product.actions";
 import type { IAdminProduct } from "@/features/admin/products/server/product.queries";
+import { selectOnFocus } from "@/features/admin/components/select-on-focus";
 import { CATEGORY_LABELS } from "@/features/catalog/constants/products";
 
 interface IProductFormProps {
@@ -128,6 +129,8 @@ export function ProductForm({ product }: IProductFormProps) {
     control,
     handleSubmit,
     setValue,
+    setError,
+    setFocus,
     reset,
     formState: { errors, isDirty, isSubmitting },
   } = useForm<ProductFormValues, undefined, ProductValues>({
@@ -161,6 +164,14 @@ export function ProductForm({ product }: IProductFormProps) {
     const result = await saveProduct(product?.id ?? null, values);
 
     if (!result.ok) {
+      // A failure the database could attribute to one input belongs UNDER that
+      // input. A toast for "that slug is already used" scrolls away leaving the
+      // offending field unmarked, and the operator re-reads the title.
+      if (result.field === "slug") {
+        setError("slug", { message: result.error });
+        setFocus("slug");
+        return;
+      }
       toast.error(result.error);
       return;
     }
@@ -257,6 +268,7 @@ export function ProductForm({ product }: IProductFormProps) {
               <Input
                 id="price"
                 type="number"
+                onFocus={selectOnFocus}
                 min={0}
                 step={1}
                 inputMode="numeric"
@@ -290,6 +302,7 @@ export function ProductForm({ product }: IProductFormProps) {
               <Input
                 id="sortOrder"
                 type="number"
+                onFocus={selectOnFocus}
                 step={1}
                 inputMode="numeric"
                 disabled={busy}

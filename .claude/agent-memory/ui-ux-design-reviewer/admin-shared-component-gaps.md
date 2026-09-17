@@ -5,6 +5,17 @@ metadata:
   type: project
 ---
 
+> **⚠️ BOTH GAPS BELOW ARE FIXED (verified 2026-09-17). Kept for history — do
+> not re-report them from this note, and do not trust it over the code.**
+>
+> 1. `Field` now wires `aria-describedby`/`aria-required`/`aria-invalid` into its
+>    child by cloning it (`fieldDescriptionId()`), and `SelectField`/`SwitchField`
+>    cover the Base UI controls it cannot reach.
+> 2. Every long form now calls `useUnsavedChangesGuard`. That hook covers
+>    `beforeunload` AND, since 2026-09-17, in-app navigation via
+>    `NavigationBlockerProvider` + `AdminLink` (`onNavigate`) — a sidebar click
+>    on a dirty form now confirms before discarding.
+
 Two systemic gaps found in the internal admin (`src/app/(admin)/**`, `src/features/admin/**`) during the 2026-09-06 UI/UX audit, both traced to the shared `Field` primitive at `src/features/admin/components/field.tsx`:
 
 1. **No `aria-describedby` wiring.** `Field` computes a `describedBy` id (`${htmlFor}-error` / `${htmlFor}-hint`) and attaches it only to its own `<p>`, never to `children`. Every consumer (product/category forms, settings/home tabbed forms, order notes, login) independently fails to pass `aria-describedby` on the control either. Net effect: `aria-invalid` fires, but the actual error message is never announced to assistive tech. Also no consumer sets `aria-required`/`required` (forms use `noValidate` so native validation is off), so the `Field` required asterisk (`aria-hidden="true"`) is sighted-only too.
