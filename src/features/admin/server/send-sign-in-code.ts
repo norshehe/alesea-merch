@@ -14,7 +14,16 @@ function confirmUrl(next?: string): string {
 }
 
 /**
- * Email a one-time sign-in link to an admin.
+ * Email a one-time sign-in code to an admin.
+ *
+ * One `signInWithOtp` call issues BOTH forms of the same grant — a numeric
+ * code and a clickable link — and the Supabase email template decides which of
+ * them the message actually shows. The template must render `{{ .Token }}`, or
+ * this sends a link nobody can use: mail scanners spend link tokens on arrival,
+ * which is why `LoginForm` asks for the typed code.
+ *
+ * `emailRedirectTo` is still set so the link half keeps working on mailboxes
+ * that do not prefetch; it lands on `/auth/confirm`.
  *
  * `shouldCreateUser: false` is what makes this INVITE-ONLY: Supabase will not
  * provision an account for an unknown address, so an uninvited email simply gets
@@ -24,7 +33,7 @@ function confirmUrl(next?: string): string {
  * The result is identical whether or not the address exists. Reporting "no such
  * user" would turn this form into an oracle for who works here.
  */
-export async function sendMagicLink(input: {
+export async function sendSignInCode(input: {
   email: string;
   next?: string;
 }): Promise<SendMagicLinkResult> {
@@ -45,7 +54,7 @@ export async function sendMagicLink(input: {
   if (error) {
     // An unknown address surfaces here as an error. Log it, but never tell the
     // browser which case it was — rate limits are the only thing worth showing.
-    console.warn("[admin-auth] magic link not sent:", error.message);
+    console.warn("[admin-auth] sign-in code not sent:", error.message);
     if (error.status === 429) {
       return { ok: false, error: "Too many attempts. Try again in a minute." };
     }

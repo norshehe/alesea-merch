@@ -23,7 +23,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  * consequences (a password reset, an accepted invite, a changed account email)
  * and none of them belongs on a link whose only job is to open the admin.
  *
- * `signInWithOtp` with `shouldCreateUser: false` (see send-magic-link.ts) can
+ * `signInWithOtp` with `shouldCreateUser: false` (see send-sign-in-code.ts) can
  * only produce these two: `magiclink` for the emailed link, `email` for the
  * six-digit code form of the same grant.
  */
