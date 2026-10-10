@@ -7,6 +7,7 @@ import {
   Settings,
   ShoppingBag,
   Tags,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ export const ADMIN_NAV_ITEMS: readonly IAdminNavItem[] = [
   { label: "Categories", href: "/admin/categories", icon: Tags },
   { label: "Home page", href: "/admin/home", icon: House },
   { label: "Settings", href: "/admin/settings", icon: Settings },
+  { label: "Users", href: "/admin/users", icon: Users },
 ];
 
 /**

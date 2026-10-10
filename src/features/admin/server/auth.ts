@@ -31,9 +31,10 @@ export const getAdminUser = cache(async (): Promise<IAdminUser | null> => {
 
   if (!user) return null;
 
-  // `.maybeSingle()` — no row is the expected "invited but not provisioned yet"
-  // state, not an error. RLS (`admin_users_self_read`) already restricts this to
-  // the caller's own row.
+  // `.maybeSingle()` — no row is an expected state (a removed admin, or a user
+  // whose invitation could not be accepted), not an error. The `eq` is what
+  // scopes this to the caller: since 0011, `admin_users_read` lets an admin see
+  // EVERY row, while a non-admin still sees only their own (i.e. none).
   const { data, error } = await supabase
     .from("admin_users")
     .select("user_id, email, name")
@@ -72,8 +73,9 @@ export const getAdminUser = cache(async (): Promise<IAdminUser | null> => {
  *    `/not-authorized` is therefore outside the proxy matcher AND outside
  *    `admin/layout.tsx` (so it never re-enters this function). It renders a dead
  *    end with a real sign-out form, which POSTs to a Route Handler where cookies
- *    CAN be cleared. This path is live today: `admin_users` is empty, so every
- *    invited operator hits it until their row is inserted.
+ *    CAN be cleared. It is reached by a user whose invitation was revoked or
+ *    expired after their auth user was created, and by anyone left with a
+ *    session after their `admin_users` row was removed.
  */
 export async function requireAdmin(): Promise<IAdminUser> {
   const admin = await getAdminUser();

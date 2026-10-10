@@ -5,16 +5,17 @@ import {
   adminLoginSchema,
   adminOtpSchema,
 } from "@/features/admin/schemas/login.schema";
+import { acceptInvitation } from "@/features/admin/users/server/invitations";
 
 type VerifyOtpResult = { ok: true; next: string } | { ok: false; error: string };
 
 /**
  * Exchange a typed sign-in code for a session.
  *
- * The counterpart to `/auth/confirm`, which redeems the `token_hash` from a
- * clicked link. Both end at `verifyOtp`; this one exists because the link half
- * cannot survive a mail scanner that prefetches URLs (see the code comment on
- * `adminOtpSchema`).
+ * The ONLY way into the admin. There was a `/auth/confirm` route that redeemed
+ * the `token_hash` from a clicked link; it is gone, because a URL that mints an
+ * admin session is what a prefetching mail scanner turns into a lockout (see
+ * the comment on `adminOtpSchema`).
  *
  * A Server Action rather than a Route Handler because the browser already has
  * the code — there is no navigation to intercept — and an action can write the
@@ -37,16 +38,16 @@ export async function verifyAdminOtp(input: {
     return { ok: false, error: "That code is not valid." };
   }
 
-  // Same rule as `/auth/confirm`: only same-site relative paths, or an attacker
-  // could hand someone a login link that lands them on another origin holding a
-  // freshly minted session.
+  // Only same-site relative paths. `next` arrives from the query string, so an
+  // absolute value would let someone hand a colleague a /login?next=… that
+  // lands them on another origin holding a freshly minted session.
   const next =
     input.next && input.next.startsWith("/") && !input.next.startsWith("//")
       ? input.next
       : "/admin";
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     email: email.data.email,
     token: token.data.token,
     type: "email",
@@ -64,6 +65,14 @@ export async function verifyAdminOtp(input: {
       ok: false,
       error: "That code didn't work. It expires quickly and works only once.",
     };
+  }
+
+  // First sign-in of an invitee: the code has just proven they own the mailbox,
+  // which is the moment an open invitation may become an `admin_users` row.
+  // For everyone else this is a no-op. It never fails the sign-in — a user it
+  // could not promote lands on `/not-authorized`, exactly like an uninvited one.
+  if (data.user) {
+    await acceptInvitation(data.user.id, data.user.email ?? email.data.email);
   }
 
   return { ok: true, next };

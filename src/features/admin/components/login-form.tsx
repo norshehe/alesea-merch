@@ -27,12 +27,12 @@ interface ILoginFormProps {
  * Admin sign-in in two steps: ask for an email, then take the numeric code
  * that email carries.
  *
- * The code is typed rather than clicked ON PURPOSE. This used to be a pure
- * magic link, and on Microsoft 365 it never worked: Defender Safe Links fetched
- * the URL within a second of delivery and spent the single-use token, so every
- * human click arrived at `otp_expired`. The emailed link still works where it
- * survives — `/auth/confirm` is unchanged — but the code is the path that
- * cannot be consumed by a machine.
+ * The code is typed rather than clicked ON PURPOSE, and there is no longer any
+ * link to click. This used to be a pure magic link, and on Microsoft 365 it
+ * never worked: Defender Safe Links fetched the URL within a second of delivery
+ * and spent the single-use token, so every human click arrived at
+ * `otp_expired`. Keeping a link alongside the code would not have helped — both
+ * redeem the SAME grant, so a prefetched link breaks the typed code too.
  */
 export function LoginForm({ next }: ILoginFormProps) {
   const router = useRouter();
@@ -49,7 +49,7 @@ export function LoginForm({ next }: ILoginFormProps) {
   });
 
   const onRequestCode = emailForm.handleSubmit(async (values) => {
-    const result = await sendSignInCode({ email: values.email, next });
+    const result = await sendSignInCode({ email: values.email });
     if (result.ok) {
       setSentTo(values.email);
       codeForm.reset({ token: "" });
@@ -96,7 +96,7 @@ export function LoginForm({ next }: ILoginFormProps) {
           htmlFor="admin-otp"
           required
           error={codeForm.formState.errors.token?.message}
-          hint="The digits from the email. Typing the code beats clicking the link — mail scanners open links before you do."
+          hint="The digits from the email. It works once and expires shortly."
         >
           <Input
             id="admin-otp"

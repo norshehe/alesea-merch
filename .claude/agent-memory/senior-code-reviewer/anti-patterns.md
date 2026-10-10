@@ -43,6 +43,12 @@ Recurring issues seen in alesea-merch review work. Check for these each review.
 
 **Base UI (NOT Radix) — `Select`/`Switch`/`Checkbox` need `<Controller>`.** `register()` on them silently yields empty values, and there is no `asChild` (it is `render={...}`). The admin forms get this right today; check every new one.
 
+**Admin sign-in "non-oracle" claims leak through side channels.** `sendSignInCode` returns an identical body for known/unknown addresses, but surfaces `status === 429` — and GoTrue only reaches its per-email send-frequency limit (429) for an EXISTING user; an unknown address with `shouldCreateUser:false` fails earlier with 422. Since 0011, invited addresses get an auth user too (`provisionInvitedUser`), plus a timing gap from `createUser`. On any login/invite change, check status codes and timing, not just response bodies.
+
+**Server-rendered dates without `timeZone`.** Vercel renders in UTC; the invite email pins `Asia/Manila` but `/admin/users` `DATE_FORMAT` does not, so the same expiry prints a day apart. Flag any `Intl.DateTimeFormat` on the server without an explicit `timeZone`.
+
+**Hand-patched `types.ts`.** The file carries a hand-written header above generator output; agents re-add it by hand after regenerating. Verify via `generate_typescript_types` that only the header differs (checked OK on 2026-10-10 for 0011: `public.is_admin` was dropped in 0008, and the current generator omits trigger fns like `release_order_stock_on_delete`).
+
 ---
 
 ### RESOLVED (kept as patterns to watch for)
