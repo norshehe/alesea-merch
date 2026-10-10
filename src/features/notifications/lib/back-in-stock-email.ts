@@ -1,20 +1,17 @@
 import type { ICatalogProduct } from "@/features/catalog/types";
 import { formatPrice } from "@/lib/format";
-
-/** Escape interpolated values so a product name can never inject markup. */
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+import {
+  EMAIL_SIGN_OFF,
+  EMAIL_STYLE,
+  emailButton,
+  emailParagraph,
+  emailShell,
+} from "@/lib/email/shell";
 
 /**
  * Build the back-in-stock email for a product.
  *
- * Inline styles only, table-free, single column — the usual constraints for mail
- * clients. Copy is intentionally short: the job of this email is one click
+ * Built on the shared `emailShell` (`@/lib/email/shell`). Copy is intentionally short: the job of this email is one click
  * through to the product page.
  */
 export function buildBackInStockEmail(
@@ -33,32 +30,24 @@ export function buildBackInStockEmail(
     "",
     `Shop it: ${url}`,
     "",
-    "— Alesea Lifestyle, La Union",
+    EMAIL_SIGN_OFF,
   ].join("\n");
 
-  const html = `
-<div style="margin:0;padding:32px 16px;background:#f6f1eb;font-family:Helvetica,Arial,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;background:#fbf8f2;padding:40px 32px;">
-    <p style="margin:0 0 22px;font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:#084e50;">
-      Alesea Lifestyle
-    </p>
-    <h1 style="margin:0 0 18px;font-family:Georgia,'Times New Roman',serif;font-size:30px;line-height:1.15;font-weight:400;color:#084e50;">
-      ${escapeHtml(product.name)} just landed.
-    </h1>
-    <p style="margin:0 0 26px;font-size:15px;line-height:1.7;color:#6b6256;">
-      You asked us to let you know when it arrived — it's in stock now at
-      ${escapeHtml(price)}.
-    </p>
-    <a href="${escapeHtml(url)}"
-       style="display:inline-block;padding:15px 32px;background:#084e50;color:#ffffff;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;text-decoration:none;border-radius:999px;">
-      Shop it now
-    </a>
-    <p style="margin:32px 0 0;font-size:12px;line-height:1.7;color:#9a8c73;">
-      You're getting this because you signed up for a restock alert on
-      alesea.co. It's a one-off — we won't email you again about this item.
-    </p>
-  </div>
-</div>`.trim();
+  const html = emailShell(
+    `${product.name} just landed.`,
+    [
+      emailParagraph(
+        `You asked us to let you know when it arrived — it's in stock now at ${price}.`,
+        `${EMAIL_STYLE.body}margin-bottom:26px;`,
+      ),
+      emailButton(url, "Shop it now"),
+      emailParagraph(
+        "You're getting this because you signed up for a restock alert on alesea.co. It's a one-off — we won't email you again about this item.",
+        `${EMAIL_STYLE.small}margin-top:32px;`,
+      ),
+    ].join("\n    "),
+    { title: subject },
+  );
 
   return { subject, text, html };
 }

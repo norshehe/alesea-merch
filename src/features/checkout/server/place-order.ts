@@ -6,6 +6,7 @@ import {
   type IOrderAmounts,
 } from "@/lib/supabase/order/orderClient";
 import { placeOrderInputSchema } from "@/features/checkout/schemas/checkout.schema";
+import { scheduleOrderPlacedEmails } from "@/features/notifications/server/order-emails";
 
 /**
  * One requested line.
@@ -161,6 +162,10 @@ export async function placeOrder(
         error: `Sorry — ${result.outOfStock} just sold out. Please remove it from your bag and try again.`,
       };
     }
+
+    // Runs after the response via `after()` and never throws — an email
+    // failure must not turn a placed order into an error on this page.
+    scheduleOrderPlacedEmails({ id: result.id, reference: result.reference });
 
     return { ok: true, reference: result.reference, amounts: result.amounts };
   } catch (error) {

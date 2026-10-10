@@ -18,3 +18,4 @@ _Reusable implementation patterns and gotchas discovered while building. One lin
 - [Storefront resilience contract](project_storefront-resilience-contract.md) — catalog reads throw (ISR caches 404s); chrome/copy/inventory degrade; public client is lazy.
 - [Admin write contract](project_admin-write-contract.md) — zero-row writes, insert-before-delete, server-only byte deletes, whole-storefront revalidation.
 - [Admin invitations](project_admin-invitations.md) — no token URLs; auth user pre-created at code request, admin granted at OTP verify; SQL last-admin guard.
+- [Order emails](project_order-emails.md) — after()+never throw, order_notifications claim ledger, ORDER_EMAILS_SEND flag, 3/hr per-address throttle.

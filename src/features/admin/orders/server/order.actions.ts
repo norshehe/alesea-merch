@@ -14,6 +14,7 @@ import {
   type OrderStatus,
 } from "@/features/admin/orders/schemas/order.schema";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { scheduleOrderStatusEmail } from "@/features/notifications/server/order-emails";
 
 /**
  * Write path for orders. Every export starts with `requireAdmin()` — RLS is the
@@ -98,11 +99,11 @@ export async function updateOrderStatus(
       return { ok: false, error: notWrittenMessage("order") };
     }
 
-    const after = rows[0];
+    const updated = rows[0];
     const stockMoved =
-      before.stock_reserved === after.stock_reserved
+      before.stock_reserved === updated.stock_reserved
         ? null
-        : after.stock_reserved
+        : updated.stock_reserved
           ? ("reserved" as const)
           : ("released" as const);
 
@@ -115,7 +116,11 @@ export async function updateOrderStatus(
       revalidateStorefrontProducts();
     }
 
-    return { ok: true, status: after.status, stockMoved };
+    // Only reached when the status really changed (same-status short-circuits
+    // above). Scheduled with `after()`; it never throws or alters this result.
+    scheduleOrderStatusEmail(parsed.data.orderId, updated.status, before.status);
+
+    return { ok: true, status: updated.status, stockMoved };
   } catch (error) {
     console.error("[admin-orders] status change failed", error);
     return {

@@ -3,8 +3,8 @@ import "server-only";
 /**
  * Minimal SendGrid v3 mail client.
  *
- * Deliberately a plain `fetch` wrapper rather than `@sendgrid/mail`, matching the
- * Airtable client in this codebase: one endpoint, no SDK, no extra dependency.
+ * Deliberately a plain `fetch` wrapper rather than `@sendgrid/mail`: one
+ * endpoint, no SDK, no extra dependency.
  * Server-only — it reads `SENDGRID_API_KEY` and must never reach a client bundle.
  */
 
@@ -24,6 +24,15 @@ export interface ISendEmailInput {
   /** Plain-text part. Always sent — some clients prefer it, and it aids deliverability. */
   text: string;
   html: string;
+  /**
+   * True for mail the recipient must get because of something they did — an
+   * order confirmation or status update. Sends with
+   * `bypass_unsubscribe_management`, so a global unsubscribe (meant for
+   * marketing) does not swallow their receipt. Bounces, blocks and spam
+   * reports are still honoured. Leave false for anything promotional, like
+   * back-in-stock alerts.
+   */
+  transactional?: boolean;
 }
 
 /**
@@ -31,7 +40,7 @@ export interface ISendEmailInput {
  *
  * One request per recipient (not a batched `personalizations` array) so a single
  * bad address can never fail a whole batch, and so each send maps 1:1 to the
- * Airtable row it stamps.
+ * row it stamps (a `signups` row, an `order_notifications` claim).
  *
  * @throws Error with the SendGrid status and error body on non-2xx.
  */
@@ -40,6 +49,7 @@ export async function sendEmail({
   subject,
   text,
   html,
+  transactional = false,
 }: ISendEmailInput): Promise<void> {
   if (!API_KEY || !FROM_EMAIL) {
     throw new Error("SendGrid is not configured.");
@@ -60,8 +70,12 @@ export async function sendEmail({
         { type: "text/plain", value: text },
         { type: "text/html", value: html },
       ],
-      // Let SendGrid honour unsubscribes/bounces for transactional restock mail.
-      mail_settings: { bypass_list_management: { enable: false } },
+      // SendGrid rejects `bypass_unsubscribe_management` combined with
+      // `bypass_list_management`, so exactly one is sent. Non-transactional
+      // mail keeps every suppression list in force.
+      mail_settings: transactional
+        ? { bypass_unsubscribe_management: { enable: true } }
+        : { bypass_list_management: { enable: false } },
     }),
   });
 

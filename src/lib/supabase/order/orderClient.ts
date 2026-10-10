@@ -1,5 +1,6 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import type { OrderStatus } from "@/lib/supabase/types/order/response";
 
 /**
  * Order writes, via the `place_order` Postgres function.
@@ -155,4 +156,181 @@ export async function createOrder(
       currency: row.currency,
     },
   };
+}
+
+/** One line as it was snapshotted at checkout — never re-read from `products`. */
+export interface IOrderNotificationItem {
+  name: string;
+  /** "Sand · M", falling back to colour/size when the label was blank. */
+  variant: string;
+  quantity: number;
+  lineTotal: number;
+}
+
+/**
+ * Everything an order email needs, read with the service role.
+ *
+ * Contains customer PII (email, phone, address). It exists to be rendered into
+ * an email and nothing else — never log it or return it from an action.
+ */
+export interface IOrderNotification {
+  id: string;
+  reference: string;
+  status: OrderStatus;
+  customerName: string;
+  email: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+  /**
+   * Machine key, e.g. "standard". Emails map it to a label themselves —
+   * `delivery_label` and `payment_method` are request echoes and never shown.
+   */
+  deliveryMethod: string;
+  itemCount: number;
+  subtotal: number;
+  shipping: number;
+  discount: number;
+  total: number;
+  currency: string;
+  createdAt: string;
+  items: IOrderNotificationItem[];
+}
+
+/**
+ * Load an order for an email, by id.
+ *
+ * Service role, not the cookie-bound client: the buyer confirmation runs from
+ * the public checkout action, where there is no admin session for RLS to
+ * evaluate. The amounts are the stored ones — i.e. what `place_order` charged.
+ *
+ * @returns null when no order has this id.
+ */
+export async function getOrderForNotification(
+  id: string,
+): Promise<IOrderNotification | null> {
+  const { data, error } = await supabaseAdmin
+    .from("orders")
+    .select(
+      "id, reference, status, customer_name, email, phone, address_line1, address_line2, city, province, postal_code, country, delivery_method, item_count, subtotal, shipping, discount, total, currency, created_at, order_items(name, color, size, variant_label, quantity, line_total, position)",
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  return {
+    id: data.id,
+    reference: data.reference,
+    status: data.status,
+    customerName: data.customer_name,
+    email: data.email,
+    phone: data.phone,
+    addressLine1: data.address_line1,
+    addressLine2: data.address_line2,
+    city: data.city,
+    province: data.province,
+    postalCode: data.postal_code,
+    country: data.country,
+    deliveryMethod: data.delivery_method,
+    itemCount: data.item_count,
+    subtotal: data.subtotal,
+    shipping: data.shipping,
+    discount: data.discount,
+    total: data.total,
+    currency: data.currency,
+    createdAt: data.created_at,
+    items: [...(data.order_items ?? [])]
+      .sort((a, b) => a.position - b.position)
+      .map((item) => ({
+        name: item.name,
+        variant:
+          item.variant_label.trim() ||
+          [item.color, item.size].filter((part) => part.trim()).join(" · "),
+        quantity: item.quantity,
+        lineTotal: item.line_total,
+      })),
+  };
+}
+
+/**
+ * What `order_notifications.kind` can hold — mirrors its CHECK constraint
+ * (migration 0013).
+ */
+export type OrderNotificationKind =
+  | "placed"
+  | "admin_alert"
+  | "confirmed"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refunded";
+
+/**
+ * Claim the right to send one email for an order.
+ *
+ * INSERT … ON CONFLICT DO NOTHING on `(order_id, kind)`: exactly one caller
+ * gets a row back, so a retried action or two racing status changes send the
+ * email once. `false` means someone already claimed (or sent) it.
+ */
+export async function claimOrderNotification(
+  orderId: string,
+  kind: OrderNotificationKind,
+): Promise<boolean> {
+  const { data, error } = await supabaseAdmin
+    .from("order_notifications")
+    .upsert(
+      { order_id: orderId, kind },
+      { onConflict: "order_id,kind", ignoreDuplicates: true },
+    )
+    .select("order_id");
+
+  if (error) throw error;
+  return (data ?? []).length > 0;
+}
+
+/** Give a claim back after a failed send, so a later attempt can retry. */
+export async function releaseOrderNotification(
+  orderId: string,
+  kind: OrderNotificationKind,
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from("order_notifications")
+    .delete()
+    .eq("order_id", orderId)
+    .eq("kind", kind);
+
+  if (error) throw error;
+}
+
+/** LIKE metacharacters, escaped so an address matches only itself. */
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+}
+
+/**
+ * How many orders were placed for this address since `since`
+ * (case-insensitive; includes the order that triggered the check).
+ *
+ * A count only — no rows, so no other customer's data is read. The
+ * `created_at` bound is served by `orders_recent_idx`; the address match then
+ * runs over at most an hour of orders.
+ */
+export async function countRecentOrdersForEmail(
+  email: string,
+  since: Date,
+): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", since.toISOString())
+    .ilike("email", escapeLike(email.trim()));
+
+  if (error) throw error;
+  return count ?? 0;
 }

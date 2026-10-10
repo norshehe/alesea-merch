@@ -49,6 +49,11 @@ Recurring issues seen in alesea-merch review work. Check for these each review.
 
 **Hand-patched `types.ts`.** The file carries a hand-written header above generator output; agents re-add it by hand after regenerating. Verify via `generate_typescript_types` that only the header differs (checked OK on 2026-10-10 for 0011: `public.is_admin` was dropped in 0008, and the current generator omits trigger fns like `release_order_stock_on_delete`).
 
+**Public checkout action as an email relay.** `placeOrder` is an unauthenticated `"use server"` endpoint with no rate limit/captcha; any mail it triggers goes to a CALLER-SUPPLIED address carrying caller-typed text (name, address, and `delivery_label`/`payment_method`, which `place_order` stores VERBATIM from the request even after 0010 re-derived money and line names). Flagged 2026-10-10 on the order-emails change.
+**How to apply:** any new outbound mail/SMS from a public action — check who picks the recipient, which interpolated fields are request-echoed, and whether there is per-recipient/per-IP throttling. Labels that drive copy ("Cash on delivery") must come from an enum/constant, not the request.
+
+**Order status has no transition constraints** (any → any, enum only). Anything keyed on "status changed to X" (emails, stock) must be idempotent and must not assume the prior status (e.g. delivered → cancelled).
+
 ---
 
 ### RESOLVED (kept as patterns to watch for)
