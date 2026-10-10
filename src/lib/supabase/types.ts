@@ -20,6 +20,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string | null
+          name: string | null
+          revoked_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string | null
+          name?: string | null
+          revoked_at?: string | null
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           created_at: string
@@ -584,6 +620,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_admin_invitation: {
+        Args: { p_email: string; p_user_id: string }
+        Returns: boolean
+      }
       apply_order_stock: {
         Args: { p_direction: number; p_order_id: string }
         Returns: undefined
@@ -592,7 +632,6 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
-      is_admin: { Args: never; Returns: boolean }
       is_assurance_array: { Args: { v: Json }; Returns: boolean }
       is_color_array: { Args: { v: Json }; Returns: boolean }
       is_link_array: { Args: { v: Json }; Returns: boolean }
@@ -600,17 +639,24 @@ export type Database = {
       place_order: {
         Args: { p_items: Json; p_order: Json }
         Returns: {
+          currency: string
+          discount: number
+          item_count: number
           order_id: string
           reference: string
-          item_count: number
-          subtotal: number
           shipping: number
-          discount: number
+          subtotal: number
           total: number
-          currency: string
         }[]
       }
-      release_order_stock_on_delete: { Args: never; Returns: unknown }
+      remove_admin_user: { Args: { p_user_id: string }; Returns: string }
+      revoke_admin_invitation: {
+        Args: { p_invitation_id: string }
+        Returns: {
+          orphan_user_id: string
+          revoked: boolean
+        }[]
+      }
     }
     Enums: {
       category_filter_key:

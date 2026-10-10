@@ -5,6 +5,7 @@ import {
   adminLoginSchema,
   adminOtpSchema,
 } from "@/features/admin/schemas/login.schema";
+import { acceptInvitation } from "@/features/admin/users/server/invitations";
 
 type VerifyOtpResult = { ok: true; next: string } | { ok: false; error: string };
 
@@ -46,7 +47,7 @@ export async function verifyAdminOtp(input: {
       : "/admin";
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.verifyOtp({
+  const { data, error } = await supabase.auth.verifyOtp({
     email: email.data.email,
     token: token.data.token,
     type: "email",
@@ -64,6 +65,14 @@ export async function verifyAdminOtp(input: {
       ok: false,
       error: "That code didn't work. It expires quickly and works only once.",
     };
+  }
+
+  // First sign-in of an invitee: the code has just proven they own the mailbox,
+  // which is the moment an open invitation may become an `admin_users` row.
+  // For everyone else this is a no-op. It never fails the sign-in — a user it
+  // could not promote lands on `/not-authorized`, exactly like an uninvited one.
+  if (data.user) {
+    await acceptInvitation(data.user.id, data.user.email ?? email.data.email);
   }
 
   return { ok: true, next };

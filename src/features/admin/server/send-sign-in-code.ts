@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { adminLoginSchema } from "@/features/admin/schemas/login.schema";
+import { provisionInvitedUser } from "@/features/admin/users/server/invitations";
 
 type SendSignInCodeResult = { ok: true } | { ok: false; error: string };
 
@@ -24,11 +25,16 @@ type SendSignInCodeResult = { ok: true } | { ok: false; error: string };
  *
  * `shouldCreateUser: false` is what makes this INVITE-ONLY: Supabase will not
  * provision an account for an unknown address, so an uninvited email simply gets
- * no mail. Access is granted by creating the auth user and inserting the
- * matching `public.admin_users` row — never from this form.
+ * no mail. Invitations from `/admin/users` work WITHOUT loosening that:
+ * `provisionInvitedUser` creates the auth user first, and only when an open,
+ * unexpired invitation names this address. Admin access itself is granted later,
+ * by `verifyAdminOtp`, once the code proves they own the mailbox.
  *
- * The result is identical whether or not the address exists. Reporting "no such
- * user" would turn this form into an oracle for who works here.
+ * The ANSWER is identical whether or not the address exists or is invited —
+ * reporting "no such user" would turn this form into an oracle for who works
+ * here. The timing is not: an invited address costs an extra lookup and a
+ * user creation, which a patient attacker could measure. Accepted, because it
+ * only distinguishes addresses an admin has just chosen to invite.
  */
 export async function sendSignInCode(input: {
   email: string;
@@ -38,6 +44,9 @@ export async function sendSignInCode(input: {
     return { ok: false, error: "Enter a valid email." };
   }
 
+  // Never throws and reports nothing, so it cannot change the response below.
+  await provisionInvitedUser(parsed.data.email);
+
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
@@ -46,9 +55,16 @@ export async function sendSignInCode(input: {
 
   if (error) {
     // An unknown address surfaces here as an error. Log it, but never tell the
-    // browser which case it was — rate limits are the only thing worth showing.
+    // browser which case it was.
     console.warn("[admin-auth] sign-in code not sent:", error.message);
-    if (error.status === 429) {
+    // Only the PER-IP limit is shown. The per-address limit
+    // (`over_email_send_rate_limit`) can only trip for an address that HAS an
+    // auth user — an unknown one is refused before any mail is attempted — so
+    // surfacing it would answer "does this address exist?" after two tries.
+    // Matched on the code, not `status === 429`, because both limits are 429s.
+    // The login form already words success as "if this address has access…",
+    // so a swallowed per-address limit reads true to a real admin too.
+    if (error.code === "over_request_rate_limit") {
       return { ok: false, error: "Too many attempts. Try again in a minute." };
     }
     return { ok: true };
