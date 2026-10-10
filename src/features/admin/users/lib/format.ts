@@ -1,22 +1,7 @@
 /**
- * Formatting shared by `/admin/users` and the invitation email, so the date an
- * admin sees in the list is the date the invitee reads in their inbox.
+ * Formatting for `/admin/users`. Dates use `formatManilaDate` from
+ * `@/lib/format`, shared with the emails.
  */
-
-/**
- * Pinned to Manila. Both callers render on the server (UTC on Vercel), and an
- * invite sent in the Manila morning would otherwise print the previous day.
- */
-const DATE_FORMAT = new Intl.DateTimeFormat("en-PH", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "Asia/Manila",
-});
-
-export function formatAdminDate(value: string | Date): string {
-  return DATE_FORMAT.format(typeof value === "string" ? new Date(value) : value);
-}
 
 /**
  * How an admin is named in the UI and in emails: their name when they have

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { OrderStatus } from "@/lib/supabase/types/order/response";
 
 /**
  * Mirrors the `order_status` enum and the editable columns of `public.orders`
@@ -19,9 +20,9 @@ export const ORDER_STATUSES = [
   "delivered",
   "cancelled",
   "refunded",
-] as const;
+] as const satisfies readonly OrderStatus[];
 
-export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type { OrderStatus };
 
 export const orderStatusSchema = z.enum(ORDER_STATUSES);
 

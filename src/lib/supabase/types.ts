@@ -262,6 +262,32 @@ export type Database = {
           },
         ]
       }
+      order_notifications: {
+        Row: {
+          kind: string
+          order_id: string
+          sent_at: string
+        }
+        Insert: {
+          kind: string
+          order_id: string
+          sent_at?: string
+        }
+        Update: {
+          kind?: string
+          order_id?: string
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           address_line1: string

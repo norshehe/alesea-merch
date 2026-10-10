@@ -4,6 +4,22 @@ export const DELIVERY_METHODS = ["standard", "express"] as const;
 
 export type DeliveryMethod = (typeof DELIVERY_METHODS)[number];
 
+/** Customer-facing names, shared by the checkout UI and the order emails. */
+export const DELIVERY_LABELS: Record<DeliveryMethod, string> = {
+  standard: "Standard delivery",
+  express: "Express delivery",
+};
+
+export function isDeliveryMethod(value: string): value is DeliveryMethod {
+  return (DELIVERY_METHODS as readonly string[]).includes(value);
+}
+
+/**
+ * The only payment method. Orders are cash on delivery; the action accepts
+ * exactly this string so the stored column can never carry request text.
+ */
+export const PAYMENT_METHOD_COD = "Cash on delivery";
+
 export const checkoutSchema = z.object({
   // Contact
   email: z.string().min(1, "Email is required").email("Enter a valid email"),
@@ -83,7 +99,7 @@ export const placeOrderInputSchema = z.object({
   // Enum, not string: this selects the shipping rate the database charges.
   deliveryMethod: z.enum(DELIVERY_METHODS),
   deliveryLabel: z.string().trim().max(80),
-  paymentMethod: z.string().trim().max(80),
+  paymentMethod: z.literal(PAYMENT_METHOD_COD),
   lines: z.array(placeOrderLineSchema).min(1).max(MAX_ORDER_LINES),
   subtotal: advisoryAmount,
   shippingCost: advisoryAmount,

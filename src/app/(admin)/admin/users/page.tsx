@@ -18,10 +18,8 @@ import {
   listAdminUsers,
   listOpenInvitations,
 } from "@/features/admin/users/server/user.queries";
-import {
-  adminDisplayName,
-  formatAdminDate,
-} from "@/features/admin/users/lib/format";
+import { adminDisplayName } from "@/features/admin/users/lib/format";
+import { formatManilaDate } from "@/lib/format";
 
 /**
  * Who can sign in to the admin, and who has been asked to.
@@ -92,7 +90,7 @@ export default async function AdminUsersPage() {
                     </TableCell>
                     <TableCell>{admin.email}</TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">
-                      {formatAdminDate(admin.createdAt)}
+                      {formatManilaDate(admin.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
                       {isMe ? null : (
@@ -157,8 +155,8 @@ export default async function AdminUsersPage() {
                             )}
                             <span className="text-muted-foreground text-xs whitespace-nowrap">
                               {invitation.status === "expired"
-                                ? `on ${formatAdminDate(invitation.expiresAt)}`
-                                : `until ${formatAdminDate(invitation.expiresAt)}`}
+                                ? `on ${formatManilaDate(invitation.expiresAt)}`
+                                : `until ${formatManilaDate(invitation.expiresAt)}`}
                             </span>
                             {/* Never emailed: SendGrid was down or unconfigured
                                 when it was sent, so the invitee may not know. */}
@@ -168,7 +166,7 @@ export default async function AdminUsersPage() {
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground whitespace-nowrap">
-                          {formatAdminDate(invitation.createdAt)}
+                          {formatManilaDate(invitation.createdAt)}
                           {inviter ? (
                             <span className="block text-xs">by {inviter}</span>
                           ) : null}

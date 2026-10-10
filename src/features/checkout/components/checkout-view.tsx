@@ -11,6 +11,8 @@ import { useSettings } from "@/app/providers/settings-provider";
 import { formatPrice } from "@/lib/format";
 import {
   checkoutSchema,
+  DELIVERY_LABELS,
+  PAYMENT_METHOD_COD,
   type CheckoutFormValues,
   type DeliveryMethod,
 } from "@/features/checkout/schemas/checkout.schema";
@@ -56,8 +58,8 @@ const DELIVERY_OPTIONS: {
   label: string;
   note: string;
 }[] = [
-  { key: "standard", label: "Standard delivery", note: "3–5 days · nationwide" },
-  { key: "express", label: "Express delivery", note: "1–2 days · Luzon" },
+  { key: "standard", label: DELIVERY_LABELS.standard, note: "3–5 days · nationwide" },
+  { key: "express", label: DELIVERY_LABELS.express, note: "1–2 days · Luzon" },
 ];
 
 interface IPlacedOrder {
@@ -129,7 +131,7 @@ export function CheckoutView() {
       },
       deliveryMethod: values.delivery,
       deliveryLabel,
-      paymentMethod: "Cash on delivery",
+      paymentMethod: PAYMENT_METHOD_COD,
       lines: lines.map((line) => ({
         slug: line.slug,
         name: line.name,
